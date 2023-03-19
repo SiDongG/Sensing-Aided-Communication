@@ -41,4 +41,3 @@ class rframe():
 		#logic before kalman filter
 		final_clients = kalmanFilter()
 		return final_clients #final clients is array of clients with all member variables finalized.
-
