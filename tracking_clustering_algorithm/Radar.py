@@ -103,7 +103,7 @@ class rframe():
             
         else:
             for corepoint_id in range(0,n_clusters_):
-                Cluster_dict[corepoint_id] = CorePoints[corepoint_id]
+                Next_Cluster_dict[corepoint_id] = CorePoints[corepoint_id]
 
         return Cluster_dict, Next_Cluster_dict, Next_Velocity_dict
     
