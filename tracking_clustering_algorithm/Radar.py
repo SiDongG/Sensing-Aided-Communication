@@ -28,10 +28,14 @@ def getData(frame_num, currentFileCSV):
         for row in reader_obj:
             if row[1] == frame_num:    
                 data = np.append(data,row,axis = 0)
+            elif row[1] > frame_num:
+                Next_frame_num = row[1]
+                break
+                
     data = np.reshape(data,(int(len(data)/8),8))
     data = data.astype(float)
 
-    return data
+    return data, Next_frame_num
 
 class rframe():
 	
@@ -112,10 +116,11 @@ class rframe():
     def kalmanFilter(self, client):
         client_imu_data = client.imuFrame
         x,y = 0 
+        return x,y
 		# estimate x,y leveraging imu data
 
  
     def getEstimate(self):
     #logic before kalman filter
-        final_clients = kalmanFilter()
-        return final_clients #final clients is array of clients with all member variables finalized.
+        """ final_clients = kalmanFilter(self,client)
+        return final_clients #final clients is array of clients with all member variables finalized. """
