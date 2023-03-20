@@ -26,6 +26,8 @@ def getData(frame_num, currentFileCSV):
     with open(currentFileCSV) as file:
         reader_obj = csv.reader(file)
         for row in reader_obj:
+            if frame_num == '1':
+                frame_num = row[1]
             if row[1] == frame_num:    
                 data = np.append(data,row,axis = 0)
             elif row[1] > frame_num:
@@ -110,13 +112,37 @@ class rframe():
     def findrouter(self, client):
         """ client_1_imu_data = clients[0].imuFrame
         client_2_imu_data = clients[1].imuFrame """
+        client1_id = 0
+        client2_id = 1
         ###find the router###
-        return client
+        return client1_id,client2_id
 
-    def kalmanFilter(self, client):
-        client_imu_data = client.imuFrame
-        x,y = 0 
-        return x,y
+    def kalmanFilter(self,client_id,Next_Cluster_dict,KalmanMeasurements,KalmanP,Innovation,KalmanF,ConditionalX,ConditionalP):
+        SigmaInput = 1
+        SigmaNoise = 0.5
+        Delta = 0.18
+        F = np.array([[1,0,Delta,0],[0,1,0,Delta],[0,0,1,0],[0,0,0,1]])
+        Q = SigmaInput**2 * np.array([[Delta**3/3,0,Delta**2/2,0],
+        [0,Delta**3/3,0,Delta**2/2],
+        [Delta**2/2,0,Delta,0],
+        [0,Delta**2/2,0,Delta]])
+        H = np.array([[1,0,0,0],[0,1,0,0]])
+        R = SigmaNoise**2 * np.identity(2)
+
+        NoisyMeasurements = np.zeros((2,1))
+        NoisyMeasurements[0,:] = Next_Cluster_dict[client_id][0]
+        NoisyMeasurements[1,:] = Next_Cluster_dict[client_id][1]
+
+        Innovation = NoisyMeasurements-H@ConditionalX
+        KalmanF = ConditionalP@np.transpose(H)@np.linalg.inv(H@ConditionalP@np.transpose(H)+R)
+        KalmanMeasurements = ConditionalX+KalmanF@Innovation
+        KalmanP = ConditionalP-KalmanF@H@ConditionalP
+        ConditionalX=F@KalmanMeasurements
+        ConditionalP=F@KalmanP@np.transpose(F)+Q
+
+        #client_imu_data = client.imuFrame
+        
+        return KalmanMeasurements,KalmanP,Innovation,KalmanF,ConditionalX,ConditionalP
 		# estimate x,y leveraging imu data
 
  
