@@ -9,7 +9,7 @@ cmd2 = './run.sh data.csv'
 subprocess.run(cmd1, shell=True)
 subprocess.run(cmd2, shell=True)
 
-
+currentFileCSV = 'data.csv'
 #currentFileCSV = '/Users/shannonholmes/Desktop/Python Programs/AWN/test2.csv'
 frame_id = 1
 frame_num = '1'
