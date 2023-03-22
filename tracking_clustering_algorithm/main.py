@@ -5,7 +5,7 @@ import numpy as np
 import subprocess
 
 cmd1 = 'cd Group6'
-cmd2 = './run.sh'
+cmd2 = './run.sh data.csv'
 subprocess.run(cmd1, shell=True)
 subprocess.run(cmd2, shell=True)
 
