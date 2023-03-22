@@ -2,8 +2,15 @@
 import Radar as R
 import matplotlib.pyplot as plt
 import numpy as np
+import subprocess
 
-currentFileCSV = '/Users/shannonholmes/Desktop/Python Programs/AWN/test2.csv'
+cmd1 = 'cd Group6'
+cmd2 = './run.sh'
+subprocess.run(cmd1, shell=True)
+subprocess.run(cmd2, shell=True)
+
+
+#currentFileCSV = '/Users/shannonholmes/Desktop/Python Programs/AWN/test2.csv'
 frame_id = 1
 frame_num = '1'
 
