@@ -1,28 +1,14 @@
-import socketserver
+import socket
+import IMU
 
-class MyTCPHandler(socketserver.BaseRequestHandler):
-    """
-    The request handler class for our server.
+HOST = '192.168.88.20'
+PORT = 1234
 
-    It is instantiated once per connection to the server, and must
-    override the handle() method to implement communication to the
-    client.
-    """
-
-    def handle(self):
-        # self.request is the TCP socket connected to the client
-        self.data = self.request.recv(1024).strip()
-        print("{} wrote:".format(self.client_address[0]))
-        print(self.data)
-        # just send back the same data, but upper-cased to verify connection
-        self.request.sendall(self.data.upper())
-
-if __name__ == "__main__":
-    HOST, PORT = "localhost", 80
-
-    # Create the server, binding to localhost on port 9999
-    server = socketserver.TCPServer((HOST, PORT), MyTCPHandler)
-
-    # Activate the server; this will keep running until you
-    # interrupt the program with Ctrl-C
-    server.serve_forever()
+with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:
+    sock.bind((HOST,PORT))
+    print(f'Listening on {HOST}:{PORT}...')
+    while True:
+        data, addr = sock.recvfrom(1024)
+        imu_data = [float(x) for x in data.decode().split(',')]
+        this_frame = iframe(imu_data)
+        print(f'Received IMU data from {addr}: \n {this_frame}')
