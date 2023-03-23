@@ -21,14 +21,14 @@ class iframe:
 	def __str__(self):
 		return "#### IFRAME DATA ####\n\
 				--- ACCELEROMETER ---\n\
-				x-dir: %i m/s^2\n\
-				y-dir: %i m/s^2\n\
-				z-dir: %i m/s^2\n\
+				x-dir: {0:3.2f} m/s^2\n\
+				y-dir: {1:3.2f} m/s^2\n\
+				z-dir: {2:3.2f} m/s^2\n\
 				--- GYROSCOPE ---\n\
-				x-dir: %i dps\n\
-				y-dir: %i dps\n\
-				z-dir: %i dps\n\
-				#####################\n" % (self.accel_x,self.accel_y,self.accel_z,self.gyro_x,self.gyro_y, self.gyro_z)
+				x-dir: {3:3.2f} dps\n\
+				y-dir: {4:3.2f} dps\n\
+				z-dir: {5:3.2f} dps\n\
+				#####################\n".format(self.accel_x,self.accel_y,self.accel_z,self.gyro_x,self.gyro_y, self.gyro_z)
 	def convert_accel(ax,ay,az):
 		accel_vals = [ax,ay,az]
 		new_vals =[val * 9.80665 for val in accel_vals]
