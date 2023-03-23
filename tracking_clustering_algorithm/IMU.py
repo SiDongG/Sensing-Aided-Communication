@@ -29,45 +29,47 @@ class iframe:
 				y-dir: %i dps\n\
 				z-dir: %i dps\n\
 				#####################\n" % (self.accel_x,self.accel_y,self.accel_z,self.gyro_x,self.gyro_y, self.gyro_z)
+	def convert_accel(ax,ay,az):
+		accel_vals = [ax,ay,az]
+		new_vals =[val * 9.80665 for val in accel_vals]
+		return new_vals
+		###returns as m/s^2###
+	
+	def get_imu_data():
+		#############################
+		# Strings for debug
+		#############################
+		imu_devs   = ["ACCELEROMETER","GYROSCOPE"]
+		imu_labels = ["x-dir","y-dir","z-dir"]
+		imu_units  = ["g","g","g","dps","dps","dps"]
+		if not start_bool:
+			print("IMU NOT SET UP CORRECTLY")
+			return None
+		try:
+			ax,ay,az,wx,wy,wz = mpu6050_conv() # read and convert mpu6050 data
+			ax,ay,az = convert_accel(ax, ay, az)
+			#mx,my,mz = AK8963_conv() # read and convert AK8963 magnetometer data
+		except:
+		    return 
+		print(50*"-")
+		imu_values = [ax,ay,az,wx,wy,wz]
+		for imu_ii, imu_val in enumerate(imu_values):
+		    if imu_ii%3==0: #enumerate data for three directions then print next sensor
+		        print(20*"_"+"\n"+imu_devs[int(imu_ii/3)]) # print sensor header
+		    #
+		    ###############
+		    # Print Data
+		    ###############
+		    #
+		    print("{0}: {1:3.2f} {2}".format(imu_labels[imu_ii%3],imu_val,imu_units[imu_ii]))
+		return imu_values
 
-def launch_imu():
-	t0 = time.time()
-	start_bool = False # boolean for connection
-	while (time.time()-t0)<5: # wait for 5-sec to connect to IMU
-    	try:
-        	from mpu9250_i2c import *
-        	return start_bool = True # True for forthcoming loop
-    	except:
-        	continue
-def convert_accel(ax,ay,az):
-	accel_vals = [ax,ay,az]
-	new_vals =[val * 9.80665 for val in accel_vals]
-	return new_vals
-	###returns as m/s^2###
-
-def get_imu_data():
-	#############################
-	# Strings for debug
-	#############################
-	imu_devs   = ["ACCELEROMETER","GYROSCOPE"]
-	imu_labels = ["x-dir","y-dir","z-dir"]
-	imu_units  = ["g","g","g","dps","dps","dps"]
-	try:
-		ax,ay,az,wx,wy,wz = mpu6050_conv() # read and convert mpu6050 data
-		ax,ay,az = convert_accel(ax, ay, az)
-	    #mx,my,mz = AK8963_conv() # read and convert AK8963 magnetometer data
-	except:
-	    continue 
-	print(50*"-")
-	imu_values = [ax,ay,az,wx,wy,wz]
-	for imu_ii, imu_val in enumerate(imu_values):
-	    if imu_ii%3==0: #enumerate data for three directions then print next sensor
-	        print(20*"_"+"\n"+imu_devs[int(imu_ii/3)]) # print sensor header
-	    #
-	    ###############
-	    # Print Data
-	    ###############
-	    #
-	    print("{0}: {1:3.2f} {2}".format(imu_labels[imu_ii%3],imu_val,imu_units[imu_ii]))
-	return imu_values
-    
+t0 = time.time()
+start_bool = False # boolean for connection
+while (time.time()-t0)<5: # wait for 5-sec to connect to IMU
+    try:
+        from mpu9250_i2c import *
+        start_bool = True # True for forthcoming loop
+        break
+    except:
+    	continue
