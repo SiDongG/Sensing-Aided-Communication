@@ -1,7 +1,7 @@
 import socket
-import IMU
+from IMU import *
 
-HOST = '192.168.88.20'
+HOST = '192.168.88.21'
 PORT = 1234
 
 with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:
