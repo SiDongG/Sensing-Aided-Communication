@@ -12,14 +12,18 @@ from sklearn import metrics
 import pandas as pd
 
 class client():
-	def __init__(self, IMU_data):
-		self.x = -1
-		self.y = -1
-		self.x_velocity= -1
-		self.y_velocity = -1
-		self.x_estimate = -1
-		self.y_estimate = -1
-		self.imuFrame = IMU_data
+    def __init__(self, IMU_data):   
+        self.x = -1
+        self.y = -1
+        self.x_velocity= -1
+        self.y_velocity = -1
+        self.x_orient=0
+        self.y_orient=0
+        self.z_orient=0
+        self.x_estimate = -1
+        self.y_estimate = -1
+        self.imuFrame = IMU_data
+        self.imuFramePrev = IMU_data
 
 def getData(frame_num, currentFileCSV):
     data = np.array([])
@@ -38,6 +42,24 @@ def getData(frame_num, currentFileCSV):
     data = data.astype(float)
 
     return data, Next_frame_num
+
+def trackOrientation(frame_time,client1,client2):
+    client1.x_orient = client1.x_orient + 0.5*(client1.imuFrame.gyro_x+client1.imuFramePrev.gyro_x)*frame_time
+    client1.y_orient = client1.y_orient + 0.5*(client1.imuFrame.gyro_y+client1.imuFramePrev.gyro_y)*frame_time
+    client1.z_orient = client1.z_orient + 0.5*(client1.imuFrame.gyro_z+client1.imuFramePrev.gyro_z)*frame_time
+    client2.x_orient = client2.x_orient + 0.5*(client2.imuFrame.gyro_x+client2.imuFramePrev.gyro_x)*frame_time
+    client2.y_orient = client2.y_orient + 0.5*(client2.imuFrame.gyro_y+client2.imuFramePrev.gyro_y)*frame_time
+    client2.z_orient = client2.z_orient + 0.5*(client2.imuFrame.gyro_z+client2.imuFramePrev.gyro_z)*frame_time
+
+def getVelocity(frame_time,client1,client2):
+    client1.x_velocity = 0.5*(client1.imuFrame.accel_x+client1.imuFramePrev.accel_x)*frame_time
+    client1.y_velocity = 0.5*(client1.imuFrame.accel_y+client1.imuFramePrev.accel_y)*frame_time
+    client1.z_velocity = 0.5*(client1.imuFrame.accel_z+client1.imuFramePrev.accel_z)*frame_time
+    client2.x_velocity = 0.5*(client2.imuFrame.accel_x+client2.imuFramePrev.accel_x)*frame_time
+    client2.y_velocity = 0.5*(client2.imuFrame.accel_y+client2.imuFramePrev.accel_y)*frame_time
+    client2.z_velocity = 0.5*(client2.imuFrame.accel_z+client2.imuFramePrev.accel_z)*frame_time
+    return 
+
 
 class rframe():
 	
