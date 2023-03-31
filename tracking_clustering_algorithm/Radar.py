@@ -10,6 +10,7 @@ from mpl_toolkits.mplot3d import Axes3D
 from sklearn.cluster import DBSCAN
 from sklearn import metrics
 import pandas as pd
+from numpy.linalg import norm
 
 class client():
     def __init__(self, IMU_data):   
@@ -20,35 +21,86 @@ class client():
         self.x_orient=0
         self.y_orient=0
         self.z_orient=0
+        self.quaternion=Quaternion(1,0,0,0)
         self.x_estimate = -1
         self.y_estimate = -1
         self.imuFrame = IMU_data
         self.imuFramePrev = IMU_data
 
-def getData(frame_num, data_df):
+def getData(frame_num, currentFileCSV):
     data = np.array([])
-    
-    # Select rows with matching frame number
-    selected_rows = data_df[data_df.iloc[:, 1] == frame_num]
-    
-    # Convert selected rows to numpy array
-    data = np.array(selected_rows)
-    
-    # Get the next frame number
-    next_frame_num = data_df.iloc[selected_rows.index[-1]+1, 1]
+    with open(currentFileCSV) as file:
+        reader_obj = csv.reader(file)
+        for row in reader_obj:
+            if frame_num == '1':
+                frame_num = row[1]
+            if row[1] == frame_num:    
+                data = np.append(data,row,axis = 0)
+            elif row[1] > frame_num:
+                Next_frame_num = row[1]
+                break
                 
-    data = np.reshape(data, (int(len(data)/8), 8))
+    data = np.reshape(data,(int(len(data)/8),8))
     data = data.astype(float)
 
-    return data, next_frame_num
+    return data, Next_frame_num
 
-def trackOrientation(frame_time,client1,client2):
-    client1.x_orient = client1.x_orient + 0.5*(client1.imuFrame.gyro_x+client1.imuFramePrev.gyro_x)*frame_time
-    client1.y_orient = client1.y_orient + 0.5*(client1.imuFrame.gyro_y+client1.imuFramePrev.gyro_y)*frame_time
-    client1.z_orient = client1.z_orient + 0.5*(client1.imuFrame.gyro_z+client1.imuFramePrev.gyro_z)*frame_time
-    client2.x_orient = client2.x_orient + 0.5*(client2.imuFrame.gyro_x+client2.imuFramePrev.gyro_x)*frame_time
-    client2.y_orient = client2.y_orient + 0.5*(client2.imuFrame.gyro_y+client2.imuFramePrev.gyro_y)*frame_time
-    client2.z_orient = client2.z_orient + 0.5*(client2.imuFrame.gyro_z+client2.imuFramePrev.gyro_z)*frame_time
+def trackOrientation(frame_time,client):
+    beta = 1
+    zeta = 0
+    # 9-D Madgwick Filter 
+    q = client.quaternion
+    h = q * (Quaternion(0, client.IMU_data.mag_x, client.IMU_data.mag_y, client.IMU_data.mag_z)*q.conj())
+    b = np.array([0, norm(h[1:3]), 0, h[3]])
+    f = np.array([
+            2*(q[1]*q[3] - q[0]*q[2]) - client.IMU_data.accel_x,
+            2*(q[0]*q[1] + q[2]*q[3]) - client.IMU_data.accel_y,
+            2*(0.5 - q[1]**2 - q[2]**2) - client.IMU_data.accel_z,
+            2*b[1]*(0.5 - q[2]**2 - q[3]**2) + 2*b[3]*(q[1]*q[3] - q[0]*q[2]) - client.IMU_data.mag_x,
+            2*b[1]*(q[1]*q[2] - q[0]*q[3]) + 2*b[3]*(q[0]*q[1] + q[2]*q[3]) - client.IMU_data.mag_y,
+            2*b[1]*(q[0]*q[2] + q[1]*q[3]) + 2*b[3]*(0.5 - q[1]**2 - q[2]**2) - client.IMU_data.mag_z
+        ])
+    j = np.array([
+        [-2*q[2],                  2*q[3],                  -2*q[0],                  2*q[1]],
+        [2*q[1],                   2*q[0],                  2*q[3],                   2*q[2]],
+        [0,                        -4*q[1],                 -4*q[2],                  0],
+        [-2*b[3]*q[2],             2*b[3]*q[3],             -4*b[1]*q[2]-2*b[3]*q[0], -4*b[1]*q[3]+2*b[3]*q[1]],
+        [-2*b[1]*q[3]+2*b[3]*q[1], 2*b[1]*q[2]+2*b[3]*q[0], 2*b[1]*q[1]+2*b[3]*q[3],  -2*b[1]*q[0]+2*b[3]*q[2]],
+        [2*b[1]*q[2],              2*b[1]*q[3]-4*b[3]*q[1], 2*b[1]*q[0]-4*b[3]*q[2],  2*b[1]*q[1]]
+    ])
+    step = j.T.dot(f)
+    step /= norm(step)
+    gyroscopeQuat = Quaternion(0, client.IMU_data.gyro_x, client.IMU_data.gyro_y, client.IMU_data.gyro_z)
+    stepQuat = Quaternion(step.T[0], step.T[1], step.T[2], step.T[3])
+    gyroscopeQuat = gyroscopeQuat + (q.conj() * stepQuat) * 2 * frame_time * zeta * -1
+    qdot = (q * gyroscopeQuat) * 0.5 - beta * step.T
+
+    q += qdot * client.samplePeriod
+    client.quaternion = Quaternion(q / norm(q))
+    return
+
+def trackOrientation6D(frame_time,client):
+    zeta = 0
+    beta = 1
+    # 6-D Madgwick Filter
+    q = client.quaternion
+    f = np.array([
+            2*(q[1]*q[3] - q[0]*q[2]) - client.IMU_data.accel_x,
+            2*(q[0]*q[1] + q[2]*q[3]) - client.IMU_data.accel_y,
+            2*(0.5 - q[1]**2 - q[2]**2) - client.IMU_data.accel_z
+        ])
+    j = np.array([
+        [-2*q[2], 2*q[3], -2*q[0], 2*q[1]],
+        [2*q[1], 2*q[0], 2*q[3], 2*q[2]],
+        [0, -4*q[1], -4*q[2], 0]
+    ])
+    step = j.T.dot(f)
+    step /= norm(step) 
+
+    qdot = (q * Quaternion(0, client.IMU_data.gyro_x, client.IMU_data.gyro_y, client.IMU_data.gyro_z)) * 0.5 - beta * step.T
+
+    q += qdot * frame_time
+    client.quaternion = Quaternion(q / norm(q))
 
 def getVelocity(frame_time,client1,client2):
     client1.x_velocity = 0.5*(client1.imuFrame.accel_x+client1.imuFramePrev.accel_x)*frame_time
@@ -62,12 +114,11 @@ def getVelocity(frame_time,client1,client2):
 
 class rframe():
 	
-    def __init__(self, frame_num, data, clients, prev_frame, start_time):   
+    def __init__(self, frame_num, data, clients, prev_frame):   
         self.frame_num = frame_num
         self.data = data #csv data, might need to be converted to pandas object
         self.clients = clients # array of clients with IMU data
         self.prev_frame = prev_frame
-        self.frame_start_time = start_time
 
     def getCluster(self):
 		### preform DBscan, eliminate noise ##
