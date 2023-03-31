@@ -8,6 +8,7 @@ from mpl_toolkits.mplot3d import Axes3D
 from sklearn.cluster import DBSCAN
 from sklearn import metrics
 import pandas as pd
+from numpy.linalg import norm
 
 class client():
     def __init__(self, IMU_data):   
