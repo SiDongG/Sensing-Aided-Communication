@@ -1,5 +1,3 @@
-#import IMU
-
 import numpy as np
 from numpy import genfromtxt
 import matplotlib.pyplot as plt
@@ -10,7 +8,6 @@ from mpl_toolkits.mplot3d import Axes3D
 from sklearn.cluster import DBSCAN
 from sklearn import metrics
 import pandas as pd
-from numpy.linalg import norm
 
 class client():
     def __init__(self, IMU_data):   
@@ -27,23 +24,22 @@ class client():
         self.imuFrame = IMU_data
         self.imuFramePrev = IMU_data
 
-def getData(frame_num, currentFileCSV):
+def getData(frame_num, data_df):
     data = np.array([])
-    with open(currentFileCSV) as file:
-        reader_obj = csv.reader(file)
-        for row in reader_obj:
-            if frame_num == '1':
-                frame_num = row[1]
-            if row[1] == frame_num:    
-                data = np.append(data,row,axis = 0)
-            elif row[1] > frame_num:
-                Next_frame_num = row[1]
-                break
+    
+    # Select rows with matching frame number
+    selected_rows = data_df[data_df.iloc[:, 1] == frame_num]
+    
+    # Convert selected rows to numpy array
+    data = np.array(selected_rows)
+    
+    # Get the next frame number
+    next_frame_num = data_df.iloc[selected_rows.index[-1]+1, 1]
                 
-    data = np.reshape(data,(int(len(data)/8),8))
+    data = np.reshape(data, (int(len(data)/8), 8))
     data = data.astype(float)
 
-    return data, Next_frame_num
+    return data, next_frame_num
 
 def trackOrientation(frame_time,client):
     beta = 1
@@ -114,11 +110,12 @@ def getVelocity(frame_time,client1,client2):
 
 class rframe():
 	
-    def __init__(self, frame_num, data, clients, prev_frame):   
+    def __init__(self, frame_num, data, clients, prev_frame, start_time):   
         self.frame_num = frame_num
         self.data = data #csv data, might need to be converted to pandas object
         self.clients = clients # array of clients with IMU data
         self.prev_frame = prev_frame
+        self.frame_start_time = start_time
 
     def getCluster(self):
 		### preform DBscan, eliminate noise ##
