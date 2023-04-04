@@ -8,18 +8,21 @@ from mpl_toolkits.mplot3d import Axes3D
 from sklearn.cluster import DBSCAN
 from sklearn import metrics
 import pandas as pd
+import quaternion
 from numpy.linalg import norm
 
 class client():
     def __init__(self, IMU_data):   
+        self.id = 0
         self.x = -1
         self.y = -1
         self.x_velocity= -1
         self.y_velocity = -1
+        self.z_velocity = -1
         self.x_orient=0
         self.y_orient=0
         self.z_orient=0
-        self.quaternion=Quaternion(1,0,0,0)
+        self.quaternion=quaternion(1,0,0,0)
         self.x_estimate = -1
         self.y_estimate = -1
         self.imuFrame = IMU_data
@@ -42,12 +45,23 @@ def getData(frame_num, data_df):
 
     return data, next_frame_num
 
+def quaternion_mult(q,r):
+    return [r[0]*q[0]-r[1]*q[1]-r[2]*q[2]-r[3]*q[3],
+            r[0]*q[1]+r[1]*q[0]-r[2]*q[3]+r[3]*q[2],
+            r[0]*q[2]+r[1]*q[3]+r[2]*q[0]-r[3]*q[1],
+            r[0]*q[3]-r[1]*q[2]+r[2]*q[1]+r[3]*q[0]]
+
+def Direction_Correction(point,q):
+    r = [0]+point
+    q_conj = [q[0],-1*q[1],-1*q[2],-1*q[3]]
+    return quaternion_mult(quaternion_mult(q,r),q_conj)[1:]
+
 def trackOrientation(frame_time,client):
     beta = 1
     zeta = 0
     # 9-D Madgwick Filter 
     q = client.quaternion
-    h = q * (Quaternion(0, client.IMU_data.mag_x, client.IMU_data.mag_y, client.IMU_data.mag_z)*q.conj())
+    h = q * (quaternion(0, client.IMU_data.mag_x, client.IMU_data.mag_y, client.IMU_data.mag_z)*q.conj())
     b = np.array([0, norm(h[1:3]), 0, h[3]])
     f = np.array([
             2*(q[1]*q[3] - q[0]*q[2]) - client.IMU_data.accel_x,
@@ -67,13 +81,13 @@ def trackOrientation(frame_time,client):
     ])
     step = j.T.dot(f)
     step /= norm(step)
-    gyroscopeQuat = Quaternion(0, client.IMU_data.gyro_x, client.IMU_data.gyro_y, client.IMU_data.gyro_z)
-    stepQuat = Quaternion(step.T[0], step.T[1], step.T[2], step.T[3])
+    gyroscopeQuat = quaternion(0, client.IMU_data.gyro_x, client.IMU_data.gyro_y, client.IMU_data.gyro_z)
+    stepQuat = quaternion(step.T[0], step.T[1], step.T[2], step.T[3])
     gyroscopeQuat = gyroscopeQuat + (q.conj() * stepQuat) * 2 * frame_time * zeta * -1
     qdot = (q * gyroscopeQuat) * 0.5 - beta * step.T
 
     q += qdot * client.samplePeriod
-    client.quaternion = Quaternion(q / norm(q))
+    client.quaternion = quaternion(q / norm(q))
     return
 
 def trackOrientation6D(frame_time,client):
@@ -94,10 +108,10 @@ def trackOrientation6D(frame_time,client):
     step = j.T.dot(f)
     step /= norm(step) 
 
-    qdot = (q * Quaternion(0, client.IMU_data.gyro_x, client.IMU_data.gyro_y, client.IMU_data.gyro_z)) * 0.5 - beta * step.T
+    qdot = (q * quaternion(0, client.IMU_data.gyro_x, client.IMU_data.gyro_y, client.IMU_data.gyro_z)) * 0.5 - beta * step.T
 
     q += qdot * frame_time
-    client.quaternion = Quaternion(q / norm(q))
+    client.quaternion = quaternion(q / norm(q))
 
 def getVelocity(frame_time,client1,client2):
     client1.x_velocity = 0.5*(client1.imuFrame.accel_x+client1.imuFramePrev.accel_x)*frame_time
@@ -180,15 +194,28 @@ class rframe():
 
         return Cluster_dict, Next_Cluster_dict, Next_Velocity_dict
     
-    def findrouter(self, client):
-        """ client_1_imu_data = clients[0].imuFrame
-        client_2_imu_data = clients[1].imuFrame """
-        client1_id = 0
-        client2_id = 1
+    def findrouter(self, client, MicroFrameNum,Next_Velocity_dict):
+        if MicroFrameNum == 0:
+            r = [client.x_velocity, client.y_velocity, client.z_velocity]
+            q = client.quaternion
+            New_r = quaternion_mult(q,r)
+            client.x_velocity = New_r[0]
+            client.y_velocity = New_r[1]
+            client.z_velocity = New_r[2]
         ###find the router###
-        return client1_id,client2_id
+            Min = 100
+            Min_id = 100
+            for keys in Next_Velocity_dict:
+                dis =  norm(Next_Velocity_dict[keys]-New_r)
+                if dis < Min:
+                    Min_id = keys
+                    Min = dis
+            client.id = Min_id
 
-    def kalmanFilter(self,client_id,Next_Cluster_dict,KalmanMeasurements,KalmanP,Innovation,KalmanF,ConditionalX,ConditionalP):
+        return 
+
+    def kalmanFilter(self,client,Next_Cluster_dict,KalmanMeasurements,KalmanP,Innovation,KalmanF,ConditionalX,ConditionalP):
+        client_id = client.id
         SigmaInput = 1
         SigmaNoise = 0.5
         Delta = 0.18
