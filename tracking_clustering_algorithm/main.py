@@ -14,8 +14,7 @@ frame_num = '1'
 Cluster_dict = {}
 Next_Cluster_dict = {}
 Next_Velocity_dict = {}
-total_Cluster = [] #array of all clusters for all time might not need
-total_Cluster_Kalman = []
+
 KalmanMeasurements = np.zeros((4,1))
 KalmanP = np.zeros((4,4,1))
 Innovation = np.zeros((2,1))
