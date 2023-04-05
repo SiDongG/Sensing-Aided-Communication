@@ -159,7 +159,11 @@ class rframe():
         return CorePoints
     
     def updatecluster(self,CorePoints,Next_Cluster_dict,n_clusters_,Next_Velocity_dict):
-        Cluster_dict = Next_Cluster_dict
+
+        Cluster_dict = Next_Cluster_dict.copy()
+
+        Next_Cluster_dict = {}
+        
         if Cluster_dict:
             if len(Cluster_dict) >= n_clusters_:
                 for corepoint_id in range (0,n_clusters_):
@@ -186,7 +190,9 @@ class rframe():
 
             for keys in Cluster_dict:
                 if keys in Next_Cluster_dict:
-                    Next_Velocity_dict[keys] = (Next_Cluster_dict[keys]-Cluster_dict[keys])/0.18
+                    Next_Velocity_dict[keys] = [(Next_Cluster_dict[keys][0] - Cluster_dict[keys][0]) / 0.18,
+                                            (Next_Cluster_dict[keys][1] - Cluster_dict[keys][1]) / 0.18,
+                                            (Next_Cluster_dict[keys][2] - Cluster_dict[keys][2]) / 0.18]
             
         else:
             for corepoint_id in range(0,n_clusters_):
@@ -212,7 +218,7 @@ class rframe():
                     Min = dis
             client.id = Min_id
 
-        return 
+        return client.id
 
     def kalmanFilter(self,client,Next_Cluster_dict,KalmanMeasurements,KalmanP,Innovation,KalmanF,ConditionalX,ConditionalP):
         client_id = client.id
