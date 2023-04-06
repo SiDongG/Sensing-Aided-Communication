@@ -28,8 +28,11 @@ args = parser.parse_args()
 
 cwd = os.getcwd() ##
 print(cwd) ## make sure we're in the right place modify accordingly
-
+##client create
 x = 0
+client1 = R.client()
+client2 = R.client()
+
 while(x < 2): ## get 2 global frames ## change to True later
     collect_radar_data = './run.sh data.csv'
     process = subprocess.Popen(collect_radar_data, cwd=cwd)
@@ -58,6 +61,10 @@ while(x < 2): ## get 2 global frames ## change to True later
         ## Update clusters 
         Cluster_dict, Next_Cluster_dict, Next_Velocity_dict = Frame.updatecluster(CorePoints,Next_Cluster_dict,n_clusters_,Next_Velocity_dict)
         ## Identify router and return label of that router, runs every global frame
+        # populate client imuFrame var with iframe from server
+        # TODO get frame_time compute difference from prev frame and current frame
+        # frame time Passed in getVelocity
+        # 
         client1_id = Frame.findrouter(client1, Microframe ,Next_Velocity_dict)
         KalmanMeasurements,KalmanP,Innovation,KalmanF,ConditionalX,ConditionalP = Frame.kalmanFilter\
              (client1_id,Next_Cluster_dict,KalmanMeasurements,KalmanP,Innovation,KalmanF,ConditionalX,ConditionalP)

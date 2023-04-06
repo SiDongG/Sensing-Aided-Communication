@@ -10,9 +10,10 @@ from sklearn import metrics
 import pandas as pd
 import quaternion
 from numpy.linalg import norm
+from IMU import *
 
 class client():
-    def __init__(self, IMU_data):   
+    def __init__(self):   
         self.id = 0
         self.x = -1
         self.y = -1
@@ -25,8 +26,8 @@ class client():
         self.quaternion=quaternion(1,0,0,0)
         self.x_estimate = -1
         self.y_estimate = -1
-        self.imuFrame = IMU_data
-        self.imuFramePrev = IMU_data
+        self.imuFrame = iframe([-1,-1,-1,-1,-1,-1])
+        self.imuFramePrev = iframe([-1,-1,-1,-1,-1,-1])
 
 def getData(frame_num, data_df):
     data = np.array([])
@@ -39,7 +40,8 @@ def getData(frame_num, data_df):
     
     # Get the next frame number
     next_frame_num = data_df.iloc[selected_rows.index[-1]+1, 1]
-                
+    print(next_frame_num) ##TODO verify this is working##
+    
     data = np.reshape(data, (int(len(data)/8), 8))
     data = data.astype(float)
 
