@@ -14,8 +14,8 @@ import math
 from IMU import *
 
 class client():
-    def __init__(self):   
-        self.id = 0
+    def __init__(self, id):   
+        self.id = id
         self.x = -1
         self.y = -1
         self.x_velocity= -1
@@ -29,11 +29,17 @@ class client():
         self.y_estimate = -1
         self.imuFrame = iframe([-1,-1,-1,-1,-1,-1])
         self.imuFramePrev = iframe([-1,-1,-1,-1,-1,-1])
-
+    
+    def update_imu_data(self, imu_data):
+        self.imuFramePrev = self.imuFrame
+        self.imuFrame = imu_data
 def getData(frame_num, data_df):
     data = np.array([])
     
-    # Select rows with matching frame number
+    # Select rows with matching frame number if 1 then get the frame number from the first row in the df
+    if frame_num == 1:
+        frame_num = data_df.iloc[0,1]
+
     selected_rows = data_df[data_df.iloc[:, 1] == frame_num]
     
     # Convert selected rows to numpy array
