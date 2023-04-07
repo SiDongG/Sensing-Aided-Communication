@@ -10,6 +10,7 @@ from sklearn import metrics
 import pandas as pd
 import quaternion
 from numpy.linalg import norm
+import math
 from IMU import *
 
 class client():
@@ -247,12 +248,17 @@ class rframe():
         ConditionalP=F@KalmanP@np.transpose(F)+Q
 
         #client_imu_data = client.imuFrame
+        client.x = KalmanMeasurements[0]
+        client.y = KalmanMeasurements[1]
         
         return KalmanMeasurements,KalmanP,Innovation,KalmanF,ConditionalX,ConditionalP
 		# estimate x,y leveraging imu data
 
  
-    def getEstimate(self):
-    #logic before kalman filter
-        """ final_clients = kalmanFilter(self,client)
-        return final_clients #final clients is array of clients with all member variables finalized. """
+    def getEstimate(self, client1, client2):
+        ## Calculates the Direction (in radian, between 0 and 360) of client2 wrt client 1
+        ratio = (client2.y-client1.y)/(client2.x-client1.x)
+        Theta = np.arctan(ratio)
+        if client2.x-client1.x < 0:
+            Theta = Theta + math.pi
+        return Theta
