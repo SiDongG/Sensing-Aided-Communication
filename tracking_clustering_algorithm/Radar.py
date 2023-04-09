@@ -1,17 +1,15 @@
 import numpy as np
 from numpy import genfromtxt
 import matplotlib.pyplot as plt
-import csv
-import os
-import sys
 from mpl_toolkits.mplot3d import Axes3D
 from sklearn.cluster import DBSCAN
 from sklearn import metrics
 import pandas as pd
-import quaternion
+from pyquaternion import Quaternion
 from numpy.linalg import norm
 import math
-from IMU import *
+
+from IMU import iframe
 
 class client():
     def __init__(self, id):   
@@ -24,9 +22,10 @@ class client():
         self.x_orient=0
         self.y_orient=0
         self.z_orient=0
-        self.quaternion=quaternion(1,0,0,0)
+        self.quaternion=Quaternion(1,0,0,0)
         self.x_estimate = -1
         self.y_estimate = -1
+        
         self.imuFrame = iframe([-1,-1,-1,-1,-1,-1])
         self.imuFramePrev = iframe([-1,-1,-1,-1,-1,-1])
     
@@ -65,20 +64,65 @@ def Direction_Correction(point,q):
     q_conj = [q[0],-1*q[1],-1*q[2],-1*q[3]]
     return quaternion_mult(quaternion_mult(q,r),q_conj)[1:]
 
+def quaternion_to_euler(client):
+    """
+    Convert a quaternion to Euler angles (roll, pitch, yaw) in radians.
+
+    Parameters:
+        q (numpy.ndarray): A quaternion represented as a four-element numpy array [w, x, y, z].
+
+    Returns:
+        numpy.ndarray: A three-element numpy array [roll, pitch, yaw] in radians.
+    """
+    # Normalize the quaternion
+    q = client.quaternion
+    g = np.array([q[0],q[1],q[2],q[3]])
+    q_norm = q / norm(g)
+
+    # Extract the components of the quaternion
+    w, x, y, z = q_norm
+
+    # Calculate the roll (x-axis rotation)
+    sinr_cosp = 2.0 * (w * x + y * z)
+    cosr_cosp = 1.0 - 2.0 * (x * x + y * y)
+    roll = np.arctan2(sinr_cosp, cosr_cosp)
+
+    # Calculate the pitch (y-axis rotation)
+    sinp = 2.0 * (w * y - z * x)
+    if np.abs(sinp) >= 1:
+        pitch = np.copysign(np.pi / 2, sinp)  # Use 90 degrees if out of range
+    else:
+        pitch = np.arcsin(sinp)
+
+    # Calculate the yaw (z-axis rotation)
+    siny_cosp = 2.0 * (w * z + x * y)
+    cosy_cosp = 1.0 - 2.0 * (y * y + z * z)
+    yaw = np.arctan2(siny_cosp, cosy_cosp)
+
+    # return np.array([roll, pitch, yaw])
+
+    # update client.x_orient, client.y_orient
+    client.x_orient = roll
+    client.y_orient = pitch
+
+
+
+
+
 def trackOrientation(frame_time,client):
     beta = 1
     zeta = 0
     # 9-D Madgwick Filter 
     q = client.quaternion
-    h = q * (quaternion(0, client.IMU_data.mag_x, client.IMU_data.mag_y, client.IMU_data.mag_z)*q.conj())
+    h = q * (Quaternion(0, client.imuFrame.mag_x, client.imuFrame.mag_y, client.imuFrame.mag_z)*q.conj())
     b = np.array([0, norm(h[1:3]), 0, h[3]])
     f = np.array([
-            2*(q[1]*q[3] - q[0]*q[2]) - client.IMU_data.accel_x,
-            2*(q[0]*q[1] + q[2]*q[3]) - client.IMU_data.accel_y,
-            2*(0.5 - q[1]**2 - q[2]**2) - client.IMU_data.accel_z,
-            2*b[1]*(0.5 - q[2]**2 - q[3]**2) + 2*b[3]*(q[1]*q[3] - q[0]*q[2]) - client.IMU_data.mag_x,
-            2*b[1]*(q[1]*q[2] - q[0]*q[3]) + 2*b[3]*(q[0]*q[1] + q[2]*q[3]) - client.IMU_data.mag_y,
-            2*b[1]*(q[0]*q[2] + q[1]*q[3]) + 2*b[3]*(0.5 - q[1]**2 - q[2]**2) - client.IMU_data.mag_z
+            2*(q[1]*q[3] - q[0]*q[2]) - client.imuFrame.accel_x,
+            2*(q[0]*q[1] + q[2]*q[3]) - client.imuFrame.accel_y,
+            2*(0.5 - q[1]**2 - q[2]**2) - client.imuFrame.accel_z,
+            2*b[1]*(0.5 - q[2]**2 - q[3]**2) + 2*b[3]*(q[1]*q[3] - q[0]*q[2]) - client.imuFrame.mag_x,
+            2*b[1]*(q[1]*q[2] - q[0]*q[3]) + 2*b[3]*(q[0]*q[1] + q[2]*q[3]) - client.imuFrame.mag_y,
+            2*b[1]*(q[0]*q[2] + q[1]*q[3]) + 2*b[3]*(0.5 - q[1]**2 - q[2]**2) - client.imuFrame.mag_z
         ])
     j = np.array([
         [-2*q[2],                  2*q[3],                  -2*q[0],                  2*q[1]],
@@ -90,13 +134,13 @@ def trackOrientation(frame_time,client):
     ])
     step = j.T.dot(f)
     step /= norm(step)
-    gyroscopeQuat = quaternion(0, client.IMU_data.gyro_x, client.IMU_data.gyro_y, client.IMU_data.gyro_z)
-    stepQuat = quaternion(step.T[0], step.T[1], step.T[2], step.T[3])
+    gyroscopeQuat = Quaternion(0, client.imuFrame.gyro_x, client.imuFrame.gyro_y, client.imuFrame.gyro_z)
+    stepQuat = Quaternion(step.T[0], step.T[1], step.T[2], step.T[3])
     gyroscopeQuat = gyroscopeQuat + (q.conj() * stepQuat) * 2 * frame_time * zeta * -1
     qdot = (q * gyroscopeQuat) * 0.5 - beta * step.T
 
     q += qdot * client.samplePeriod
-    client.quaternion = quaternion(q / norm(q))
+    client.quaternion = Quaternion(q / norm(q))
     return
 
 def trackOrientation6D(frame_time,client):
@@ -105,9 +149,9 @@ def trackOrientation6D(frame_time,client):
     # 6-D Madgwick Filter
     q = client.quaternion
     f = np.array([
-            2*(q[1]*q[3] - q[0]*q[2]) - client.IMU_data.accel_x,
-            2*(q[0]*q[1] + q[2]*q[3]) - client.IMU_data.accel_y,
-            2*(0.5 - q[1]**2 - q[2]**2) - client.IMU_data.accel_z
+            2*(q[1]*q[3] - q[0]*q[2]) - client.imuFrame.accel_x,
+            2*(q[0]*q[1] + q[2]*q[3]) - client.imuFrame.accel_y,
+            2*(0.5 - q[1]**2 - q[2]**2) - client.imuFrame.accel_z
         ])
     j = np.array([
         [-2*q[2], 2*q[3], -2*q[0], 2*q[1]],
@@ -117,10 +161,12 @@ def trackOrientation6D(frame_time,client):
     step = j.T.dot(f)
     step /= norm(step) 
 
-    qdot = (q * quaternion(0, client.IMU_data.gyro_x, client.IMU_data.gyro_y, client.IMU_data.gyro_z)) * 0.5 - beta * step.T
+    qdot = (q * Quaternion(0, client.imuFrame.gyro_x, client.imuFrame.gyro_y, client.imuFrame.gyro_z)) * 0.5 - beta * step.T
 
     q += qdot * frame_time
-    client.quaternion = quaternion(q / norm(q))
+    g = np.array([q[0],q[1],q[2],q[3]])
+    q = q/norm(g)
+    client.quaternion = q
 
 def getVelocity(frame_time,client1,client2):
     client1.x_velocity = 0.5*(client1.imuFrame.accel_x+client1.imuFramePrev.accel_x)*frame_time
@@ -130,6 +176,29 @@ def getVelocity(frame_time,client1,client2):
     client2.y_velocity = 0.5*(client2.imuFrame.accel_y+client2.imuFramePrev.accel_y)*frame_time
     client2.z_velocity = 0.5*(client2.imuFrame.accel_z+client2.imuFramePrev.accel_z)*frame_time
     return 
+
+
+def beamform_angle(Theta, client1):
+    angle_orient = math.atan2(client1.y_orient, client1.x_orient)  # orient of the client
+
+    ori_range_lowerbound = angle_orient - math.pi / 2
+    ori_range_upperbound = angle_orient + math.pi / 2
+
+    if Theta >= ori_range_lowerbound and Theta <= ori_range_upperbound:
+        print('Can beamform')
+        BF_angle = abs(Theta - angle_orient)
+        angle_from_lowerbound = Theta - ori_range_lowerbound
+        # beamform angle is some radian to the left or right of the center, so BF_angle in [0,pi/2]
+        if angle_from_lowerbound < math.pi/2:
+            print('Right side of center')
+        if angle_from_lowerbound > math.pi/2:
+            print('Left side of center')
+            BF_angle = Theta - ori_range_lowerbound - math.pi/2
+    else:
+        print('Cannot beamform')
+        BF_angle = 100  #  does not mean angle is 100, mean to be set as AUTO mode for router
+
+    return BF_angle  # in radian
 
 
 class rframe():
@@ -143,7 +212,8 @@ class rframe():
 
     def getCluster(self):
 		### preform DBscan, eliminate noise ##
-        data2 = self.data[:,3:6]
+        data2 = self.data
+        data2 = data2.iloc[:,3:6]
         db = DBSCAN(eps=0.3, min_samples=25).fit(data2)
         labels = db.labels_
         n_clusters_ = len(set(labels)) - (1 if -1 in labels else 0)  # Number of Clusters, Label 0-N
@@ -213,7 +283,7 @@ class rframe():
         if MicroFrameNum == 0:
             r = [client.x_velocity, client.y_velocity, client.z_velocity]
             q = client.quaternion
-            New_r = quaternion_mult(q,r)
+            New_r = Direction_Correction(r,q)
             client.x_velocity = New_r[0]
             client.y_velocity = New_r[1]
             client.z_velocity = New_r[2]

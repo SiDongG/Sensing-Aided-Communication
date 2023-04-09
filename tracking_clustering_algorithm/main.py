@@ -11,6 +11,7 @@ import time
 
 #currentFileCSV = '/Users/shannonholmes/Desktop/Python Programs/AWN/test2.csv'
 frame_num = '1'
+Frame_time = 0
 ## initialization ##
 Cluster_dict = {}
 Next_Cluster_dict = {}
@@ -40,40 +41,24 @@ cwd = os.getcwd() ##
 print(cwd) ## make sure we're in the right place modify accordingly
 ##client create
 x = 0
-client1 = R.client(id = 1)
-client2 = R.client(id = 2)
-
-HOST, PORT = "192.168.88.21", 1234
-sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-sock.bind((HOST,PORT))
+client1 = R.client()
+client2 = R.client()
 
 while(x < 2): ## get 2 global frames ## change to True later
     collect_radar_data = './run.sh data.csv'
     process = subprocess.Popen(collect_radar_data, cwd=cwd)
     time.sleep(args.time)
     process.terminate()
-    data, addr = sock.recvfrom(1024)
-
-    imu_data = [float(x) for x in data.decode().split(',')]
-
+    
     data_df = pd.read_csv('data.csv')
     #check what the name of this column is#
     num_frames = data_df.iloc[:,1].nunique()
     print("DEBUG: Number of unique frames: ", num_frames)
     ##TODO migrate these calls the global frame function##
-    if frame_num == '1':
-        frame_num = data_df.iloc[0,1]
-    first_time = data_df.iloc[0,0]
-    last_time = data_df.iloc[-1,0] #this is corrupt timestamp
-    num_frames = num_frames - 1 
-    #remove all points from last frame.
-    data_df = data_df[data_df.iloc[:, 1] != data_df.iloc[-1, 1]]
-
     for Microframe in range(0,num_frames): #while true
         ## Get data function returns first time, last time in one global frame and frametime between microframe (if it is not the first micro frame in global frame)
-        frametime, data, Next_frame = R.getData(frame_num, data_df)
+        first_time, last_time, frametime, data, Next_frame = R.getData(frame_num, data_df)
         
-        #TODO review this code.
         if Microframe == 0 and x != 0:
             Stop_time = time.time()
             Frame_time = Stop_time-Start_time+first_time-last_time
@@ -94,12 +79,14 @@ while(x < 2): ## get 2 global frames ## change to True later
         CorePoints = Frame.getcorePoint(n_clusters_,labels)
         ## Update clusters 
         Cluster_dict, Next_Cluster_dict, Next_Velocity_dict = Frame.updatecluster(CorePoints,Next_Cluster_dict,n_clusters_,Next_Velocity_dict)
-        # update client1.imudata and client2.imudata here 
+
         # populate client imuFrame var with iframe from server
         R.trackOrientation6D(Frame_time,client1)
         R.trackOrientation6D(Frame_time,client2)
-        R.getVelocity(Frame_time,client1)
-        R.getVelocity(Frame_time,client2)
+        R.getVelocity(Frame_time,client1,client2)
+        # Update Orientation
+        R.quaternion_to_euler(client1)
+        R.quaternion_to_euler(client2)
         ## Identify router and return label of that router, runs every global frame
         client1_id = Frame.findrouter(client1, Microframe, Next_Velocity_dict)
         client2_id = Frame.findrouter(client2, Microframe, Next_Velocity_dict)
@@ -113,6 +100,7 @@ while(x < 2): ## get 2 global frames ## change to True later
         ## Get Beamforming angle
         Theta = Frame.getEstimate (client1,client2)
 
+        Beamangle = R.beamform_angle(Theta,client1)
         
         Prev_Frame = Frame
         frame_num = Next_frame
