@@ -32,26 +32,16 @@ class client():
     def update_imu_data(self, imu_data):
         self.imuFramePrev = self.imuFrame
         self.imuFrame = imu_data
-def getData(frame_num, data_df):
+
+def getData(data_df):
     data = np.array([])
-    
-    # Select rows with matching frame number if 1 then get the frame number from the first row in the df
-    if frame_num == 1:
-        frame_num = data_df.iloc[0,1]
+    unique_value = data_df.iloc[:,1].value_counts().index
+    sorted_list = sorted(unique_value)
+    frame_num = sorted_list[-2]
+    print(frame_num)
+    df_filtered = data_df[data_df.iloc[:,1]==frame_num]
 
-    selected_rows = data_df[data_df.iloc[:, 1] == frame_num]
-    
-    # Convert selected rows to numpy array
-    data = np.array(selected_rows)
-    
-    # Get the next frame number
-    next_frame_num = data_df.iloc[selected_rows.index[-1]+1, 1]
-    print(next_frame_num) ##TODO verify this is working##
-    
-    data = np.reshape(data, (int(len(data)/8), 8))
-    data = data.astype(float)
-
-    return data, next_frame_num
+    return df_filtered
 
 def quaternion_mult(q,r):
     return [r[0]*q[0]-r[1]*q[1]-r[2]*q[2]-r[3]*q[3],
@@ -225,13 +215,13 @@ class rframe():
         CorePoints = np.zeros((n_clusters_,3))
         CoreNum = np.zeros((n_clusters_))
         CoreSum = np.zeros((n_clusters_,3))
-
+        Index = self.data.index[0]
         for point in range(0,len(self.data)):
             if labels[point] != -1:
                 CoreNum[labels[point]] = CoreNum[labels[point]] + 1
-                CoreSum[labels[point]][0] = CoreSum[labels[point]][0] + self.data[point][3]
-                CoreSum[labels[point]][1] = CoreSum[labels[point]][1] + self.data[point][4]
-                CoreSum[labels[point]][2] = CoreSum[labels[point]][2] + self.data[point][5]
+                CoreSum[labels[point]][0] = CoreSum[labels[point]][0] + self.data.loc[point+Index].iat[3]
+                CoreSum[labels[point]][1] = CoreSum[labels[point]][1] + self.data.loc[point+Index].iat[4]
+                CoreSum[labels[point]][2] = CoreSum[labels[point]][2] + self.data.loc[point+Index].iat[5]
 
         for corepoint_id in range(0,n_clusters_):
             CorePoints[corepoint_id] = CoreSum[corepoint_id]/CoreNum[corepoint_id]
@@ -279,23 +269,22 @@ class rframe():
 
         return Cluster_dict, Next_Cluster_dict, Next_Velocity_dict
     
-    def findrouter(self, client, MicroFrameNum,Next_Velocity_dict):
-        if MicroFrameNum == 0:
-            r = [client.x_velocity, client.y_velocity, client.z_velocity]
-            q = client.quaternion
-            New_r = Direction_Correction(r,q)
-            client.x_velocity = New_r[0]
-            client.y_velocity = New_r[1]
-            client.z_velocity = New_r[2]
-        ###find the router###
-            Min = 100
-            Min_id = 100
-            for keys in Next_Velocity_dict:
-                dis =  norm(Next_Velocity_dict[keys]-New_r)
-                if dis < Min:
-                    Min_id = keys
-                    Min = dis
-            client.id = Min_id
+    def findrouter(self, client, Next_Velocity_dict):
+        r = [client.x_velocity, client.y_velocity, client.z_velocity]
+        q = client.quaternion
+        New_r = Direction_Correction(r,q)
+        client.x_velocity = New_r[0]
+        client.y_velocity = New_r[1]
+        client.z_velocity = New_r[2]
+    ###find the router###
+        Min = 100
+        Min_id = 100
+        for keys in Next_Velocity_dict:
+            dis =  norm(Next_Velocity_dict[keys]-New_r)
+            if dis < Min:
+                Min_id = keys
+                Min = dis
+        client.id = Min_id
 
         return client.id
 
