@@ -14,6 +14,7 @@ def handle_client(client_address):
         sock.bind(client_address)
         while True:
             data, addr = sock.recvfrom(1024)
+            print(f'Received data from {addr}: {data}')
             imu_data = [float(val) for val in data.decode().split(',')]
             imu_frame = iframe(imu_data)
             with clients_lock:
@@ -29,7 +30,7 @@ while(True):
     if not Start:
         with clients_lock:
             for client in clients:
-                print(client.id)
+                print(client)
                 client_ips.append(client.id)
 
         #ensure client1 and client2 always stay the same
