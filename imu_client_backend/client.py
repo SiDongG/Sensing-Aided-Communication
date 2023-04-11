@@ -11,7 +11,7 @@ client_index = 0  # change this to 1 for the second client
 PORT = SERVER_PORT + client_index + 1
 
 data = i.get_imu_data()
-
+sock.settimeout(2.0)
 sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 sock.bind(("", PORT))
 # Create a socket (SOCK_DGRAM means a UDP socket)
@@ -29,10 +29,10 @@ while True:
         data, server_address = sock.recvfrom(1024)
         received_data = float(data)
         print(received_data)
-        time.sleep(1)
-    except:
+    except socket.timeout:
     #data, server_address = sock.recvfrom(1024)
     #beamangle = data.decode()
     #print("#### RECEIVED FROM {}: {} ####".format(server_address, beamangle))
         time.sleep(1)
         continue
+    sleep(1)
