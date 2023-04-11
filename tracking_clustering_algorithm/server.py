@@ -22,6 +22,7 @@ def handle_client(client_address):
                 if addr not in clients.keys():
                     clients[addr] = R.client(imu_frame, client_address)
                     client_ips.append(addr)
+                    print(addr)
                 else:
                     clients[addr] = clients[client_address].update_imu_data(imu_frame)
 for i in range(2):
