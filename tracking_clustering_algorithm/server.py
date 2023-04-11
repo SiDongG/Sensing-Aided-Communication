@@ -1,15 +1,14 @@
 import socket
 from IMU import *
 import Radar as R
-
+from threading import Thread
+from threading import Lock
 HOST = '192.168.88.21'
 PORT = 1234
 clients = {}
 clients_lock = Lock()
 client_ips = []
-client1 = R.client()
-client2 = R.client()
-
+Start = False
 def handle_client(client_address):
     with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:
         sock.bind(client_address)
@@ -26,15 +25,21 @@ for i in range(2):
     client_address = ("", PORT + i + 1)
     Thread(target = handle_client, args = (client_address,), daemon=True).start()
 while(True):
-    with clients_lock:
         #if first loop, assign client 1/2's ip address
-        if not Start:
+    if not Start:
+        with clients_lock:
             for client in clients:
+                print(client.id)
                 client_ips.append(client.id)
 
         #ensure client1 and client2 always stay the same
-        client1 = clients[client_ips[0]]
-        client2 = clients[client_ips[1]]
+        if len(client_ips) < 2:
+            print("not connected")
+            continue
+        with clients_lock:
+            client1 = clients[client_ips[0]]
+            client2 = clients[client_ips[1]]
+        
         print(f'Client 1\n{client1.imuFrame}')
         print(f'Client 2 \n{client2.imuFrame}')
         Beamangle = 20
@@ -42,5 +47,6 @@ while(True):
             with clients_lock:
                 s.sendto(str(Beamangle).encode(), (client_ips[0], PORT))
                 s.sendto(str(Beamangle).encode(), (client_ips[1], PORT))
-                print("#### Sending to {}:{} ####".format(client_ips[0], Beamangle))
-                print("#### Sending to {}:{} ####".format(client_ips[1], Beamangle))
+            print("#### Sending to {}:{} ####".format(client_ips[0], Beamangle))
+            print("#### Sending to {}:{} ####".format(client_ips[1], Beamangle))
+        Start = True
