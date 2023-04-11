@@ -7,7 +7,7 @@ HOST = "192.168.88.21"
 SERVER_PORT = 1234
 
 # assign a unique port number for this client based on its index
-client_index = 0  # change this to 1 for the second client
+client_index = 1  # change this to 1 for the second client
 PORT = SERVER_PORT + client_index + 1
 
 data = i.get_imu_data()
