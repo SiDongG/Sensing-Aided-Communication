@@ -12,8 +12,8 @@ import math
 from IMU import iframe
 
 class client():
-    def __init__(self, id):   
-        self.id = id
+    def __init__(self, IMUdata, ip_address):   
+        self.id = ip_address
         self.x = -1
         self.y = -1
         self.x_velocity= -1
@@ -26,7 +26,7 @@ class client():
         self.x_estimate = -1
         self.y_estimate = -1
         
-        self.imuFrame = iframe([-1,-1,-1,-1,-1,-1])
+        self.imuFrame = IMUdata
         self.imuFramePrev = iframe([-1,-1,-1,-1,-1,-1])
     
     def update_imu_data(self, imu_data):
