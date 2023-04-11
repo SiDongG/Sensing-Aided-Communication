@@ -35,4 +35,5 @@ while True:
     #print("#### RECEIVED FROM {}: {} ####".format(server_address, beamangle))
         time.sleep(1)
         continue
-    sleep(1)
+    time.sleep(1)
+
