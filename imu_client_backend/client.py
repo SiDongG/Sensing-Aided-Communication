@@ -25,7 +25,7 @@ while True:
         sock.sendto(data_bytes, (HOST,PORT))
         
         print("#### SENDING: {} ####".format(data_str))
-    data, server_address = sock.recvfrom(1024)
-    beamangle = data.decode()
-    print("#### RECEIVED FROM {}: {} ####".format(server_address, beamangle))
+    #data, server_address = sock.recvfrom(1024)
+    #beamangle = data.decode()
+    #print("#### RECEIVED FROM {}: {} ####".format(server_address, beamangle))
     time.sleep(1)   
