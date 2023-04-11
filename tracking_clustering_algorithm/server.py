@@ -1,14 +1,46 @@
 import socket
 from IMU import *
+import Radar as R
 
 HOST = '192.168.88.21'
 PORT = 1234
+clients = {}
+clients_lock = Lock()
+client_ips = []
+client1 = R.client()
+client2 = R.client()
 
-with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:
-    sock.bind((HOST,PORT))
-    print(f'Listening on {HOST}:{PORT}...')
-    while True:
-        data, addr = sock.recvfrom(1024)
-        imu_data = [float(x) for x in data.decode().split(',')]
-        this_frame = iframe(imu_data)
-        print(f'Received IMU data from {addr}: \n {this_frame}')
+def handle_client(client_address):
+    with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:
+        sock.bind(client_address)
+        while True:
+            data, addr = sock.recvfrom(1024)
+            imu_data = [float(val) for val in data.decode().split(',')]
+            imu_frame = iframe(imu_data)
+            with clients_lock:
+                if client_address not in clients.keys():
+                    clients[client_address] = R.client(imu_frame)
+                else:
+                    clients[client_address] = clients[client_address].update_imu_data(imu_frame)
+for i in range(2):
+    client_address = ("", PORT + i + 1)
+    Thread(target = handle_client, args = (client_address,), daemon=True).start()
+while(True):
+    with clients_lock:
+        #if first loop, assign client 1/2's ip address
+        if not Start:
+            for client in clients:
+                client_ips.append(client.id)
+
+        #ensure client1 and client2 always stay the same
+        client1 = clients[client_ips[0]]
+        client2 = clients[client_ips[1]]
+        print(f'Client 1\n{client1.imuFrame}')
+        print(f'Client 2 \n{client2.imuFrame}')
+        Beamangle = 20
+        with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as s:
+            with clients_lock:
+                s.sendto(str(Beamangle).encode(), (client_ips[0], PORT))
+                s.sendto(str(Beamangle).encode(), (client_ips[1], PORT))
+                print("#### Sending to {}:{} ####".format(client_ips[0], Beamangle))
+                print("#### Sending to {}:{} ####".format(client_ips[1], Beamangle))

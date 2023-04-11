@@ -161,8 +161,8 @@ while(x < 5): ## get 5 global frames ## change to True later
         #why is there only one beam angle?
         with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as s:
             with clients_lock:
-                sock.sendto(str(Beamangle).encode(), (client_ips[0], PORT))
-                sock.sendto(str(Beamangle).encode(), (client_ips[1], PORT))
+                s.sendto(str(Beamangle).encode(), (client_ips[0], PORT))
+                s.sendto(str(Beamangle).encode(), (client_ips[1], PORT))
                 print("#### Sending to {}:{} ####".format(client_ips[0], Beamangle))
                 print("#### Sending to {}:{} ####".format(client_ips[1], Beamangle))
     
