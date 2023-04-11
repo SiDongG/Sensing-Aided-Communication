@@ -36,4 +36,7 @@ while True:
         time.sleep(1)
         continue
     time.sleep(1)
+<<<<<<< Updated upstream
 
+=======
+>>>>>>> Stashed changes
