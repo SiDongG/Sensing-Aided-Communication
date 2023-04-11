@@ -21,13 +21,17 @@ def handle_client(client_address):
         sock.bind(client_address)
         while True:
             data, addr = sock.recvfrom(1024)
+            print(f'Received data from {addr}: {data}')
             imu_data = [float(val) for val in data.decode().split(',')]
             imu_frame = iframe(imu_data)
+            #print(imu_frame)
             with clients_lock:
-                if client_address not in clients.keys():
-                    clients[client_address] = R.client(imu_frame)
+                if addr not in clients.keys():
+                    clients[addr] = R.client(imu_frame, addr)
+                    client_ips.append(addr)
+                    #print(addr)
                 else:
-                    clients[client_address] = clients[client_address].update_imu_data(imu_frame)
+                    clients[addr] = clients[client_address].update_imu_data(imu_frame)
 def run_radar_collection():
     process = subprocess.Popen(collect_radar_data, cwd=cwd, shell = True)
     time.sleep(args.time)
@@ -86,9 +90,13 @@ client1 = R.client()
 client2 = R.client()
 
 Start = False
+
+#start client threads
 for i in range(2):
     client_address = ("", PORT + i + 1)
     Thread(target = handle_client, args = (client_address,), daemon=True).start()
+
+
 while(x < 5): ## get 5 global frames ## change to True later
     run_radar_collection()
     data_df = pd.read_csv('data.csv')
@@ -97,15 +105,14 @@ while(x < 5): ## get 5 global frames ## change to True later
         # if we didn't get enough frames rerun data collection
         continue
     #here we can edit the csv file.
-    with clients_lock:
-        #if first loop, assign client 1/2's ip address
-        if not Start:
-            for client in clients:
-                client_ips.append(client.id)
-
-        #ensure client1 and client2 always stay the same
-        client1 = clients[client_ips[0]]
-        client2 = clients[client_ips[1]]
+        #if not both connected then continue
+        if len(client_ips) < 2:
+            #print("not connected")
+            continue
+        with clients_lock:
+            #ensure clients always the same
+            client1 = clients[client_ips[0]]
+            client2 = clients[client_ips[1]]
 
     if Start == False:
         Start_time = time.time()
@@ -156,15 +163,16 @@ while(x < 5): ## get 5 global frames ## change to True later
         ## Get Beamforming angle
         Theta = Frame.getEstimate (client1,client2)
 
-        Beamangle = R.beamform_angle(Theta,client1)
+        Beamangle1 = R.beamform_angle(Theta,client1)
 
         #why is there only one beam angle?
+        Beamangle2 = 20
         with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as s:
             with clients_lock:
-                s.sendto(str(Beamangle).encode(), (client_ips[0], PORT))
-                s.sendto(str(Beamangle).encode(), (client_ips[1], PORT))
-                print("#### Sending to {}:{} ####".format(client_ips[0], Beamangle))
-                print("#### Sending to {}:{} ####".format(client_ips[1], Beamangle))
+                s.sendto(str(Beamangle1).encode(), client1.id)
+                s.sendto(str(Beamangle2).encode(), client2.id)
+            print("#### Sending to {}:{} ####".format(client_ips[0], Beamangle))
+            print("#### Sending to {}:{} ####".format(client_ips[1], Beamangle))
     
     Prev_Frame = Frame
     
