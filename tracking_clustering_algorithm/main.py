@@ -84,10 +84,20 @@ args = parser.parse_args()
 cwd = os.getcwd() ##
 print(cwd) ## make sure we're in the right place modify accordingly
 ##client create
-x = 0
+
+plt.ion()
+fig, ax = plt.subplots()
+x, y = [],[]
+sc = ax.scatter(x,y)
+plt.xlim(-10,10)
+plt.ylim(-10,10)
+plt.draw()
+
+f = 0
 client_ips = []
 client1 = R.client()
 client2 = R.client()
+
 
 Start = False
 
@@ -174,18 +184,13 @@ while(x < 5): ## get 5 global frames ## change to True later
             print("#### Sending to {}:{} ####".format(client_ips[0], Beamangle))
             print("#### Sending to {}:{} ####".format(client_ips[1], Beamangle))
     
+    x.append(KalmanMeasurements[0])
+    y.append(KalmanMeasurements[1])
+    sc.set_offsets(np.c_[x,y])
+    fig.canvas.draw_idle()
+
     Prev_Frame = Frame
     
-    frame_num += 1
+    frame_num = str(int(frame_num)+1)
     Start = True
-    x += 1  
-    """     fig = plt.figure()
-    ax =  fig.add_subplot(projection='3d')
-    
-    for row in total_Cluster_Kalman:
-        ax.scatter(row[0],row[1])
-    
-    ax.set_xlabel('X Label')
-    ax.set_ylabel('Y Label')
-    
-    plt.show() """
+    f += 1  

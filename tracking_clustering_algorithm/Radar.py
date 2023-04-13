@@ -57,10 +57,8 @@ def Direction_Correction(point,q):
 def quaternion_to_euler(client):
     """
     Convert a quaternion to Euler angles (roll, pitch, yaw) in radians.
-
     Parameters:
         q (numpy.ndarray): A quaternion represented as a four-element numpy array [w, x, y, z].
-
     Returns:
         numpy.ndarray: A three-element numpy array [roll, pitch, yaw] in radians.
     """
@@ -280,7 +278,7 @@ class rframe():
         Min = 100
         Min_id = 100
         for keys in Next_Velocity_dict:
-            dis =  norm(Next_Velocity_dict[keys]-New_r)
+            dis =  (Next_Velocity_dict[keys][0]-New_r[0])**2+(Next_Velocity_dict[keys][1]-New_r[1])**2+(Next_Velocity_dict[keys][2]-New_r[2])**2
             if dis < Min:
                 Min_id = keys
                 Min = dis
