@@ -302,6 +302,7 @@ class rframe():
         R = SigmaNoise**2 * np.identity(2)
 
         NoisyMeasurements = np.zeros((2,1))
+        print(f'Next_Cluster_dict: \n{Next_Cluster_dict}')
         NoisyMeasurements[0,:] = Next_Cluster_dict[client_id][0]
         NoisyMeasurements[1,:] = Next_Cluster_dict[client_id][1]
 

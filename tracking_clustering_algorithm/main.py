@@ -28,12 +28,13 @@ def handle_client(client_address, clients_dict, lock, ips_list):
             imu_frame = iframe(imu_data)
             #print(imu_frame)
             with lock:
+                #print("in thread... ", clients_dict)
                 if addr not in clients_dict.keys():
                     clients_dict[addr] = R.client(imu_frame, addr)
                     ips_list.append(addr)
                     #print(addr)
                 else:
-                    clients_dict[addr] = clients_dict[addr].update_imu_data(imu_frame)
+                    clients_dict[addr].update_imu_data(imu_frame)
 def run_radar_collection():
     process = subprocess.Popen(collect_radar_data, cwd=cwd, shell = True)
     time.sleep(args.time)
@@ -117,12 +118,14 @@ while f < 5: ## get 5 global frames ## change to True later
     #here we can edit the csv file.
     #if not both connected then continue
     with clients_lock:
-        if len(client_ips) < 2:
+        if len(client_ips) < 2 or len(clients) < 2:
             #print("not connected")
             continue
     with clients_lock:
         #ensure clients always the same
         #print id(clients)
+        #print('client_ips: ', client_ips)
+        #print('clientes_dict', clients)
         client1 = clients[client_ips[0]]
         client2 = clients[client_ips[1]]
     print(f'### client1 ###\n{client1}\n### client2 ###\n{client2}')
