@@ -32,6 +32,8 @@ class client():
     def update_imu_data(self, imu_data):
         self.imuFramePrev = self.imuFrame
         self.imuFrame = imu_data
+    def __str__(self):
+        return f'\n #### Client {self.id} ####\ncurrentFrame\n{self.imuFrame}\npreviousFrame{self.imuFramePrev }'
 
 def getData(data_df):
     data = np.array([])
