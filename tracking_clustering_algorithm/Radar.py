@@ -293,12 +293,12 @@ class rframe():
             if dis < Min:
                 Min_id = keys
                 Min = dis
-        client.id = Min_id
+        client.ClusterID = Min_id
 
         return client.id
 
     def kalmanFilter(self,client,Next_Cluster_dict,KalmanMeasurements,KalmanP,Innovation,KalmanF,ConditionalX,ConditionalP):
-        client_id = client.id
+        client_id = client.ClusterID
         SigmaInput = 1
         SigmaNoise = 0.5
         Delta = 0.5
