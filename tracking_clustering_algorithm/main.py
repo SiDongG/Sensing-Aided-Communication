@@ -132,6 +132,7 @@ while f < 5: ## get 5 global frames ## change to True later
     #check_connections() 
     if Start == False:
         Start_time = time.time()
+        Frame_time = 1
     else:
         Stop_time = time.time()
         Frame_time = Stop_time - Start_time
@@ -155,7 +156,7 @@ while f < 5: ## get 5 global frames ## change to True later
     ## Get Core points of each unique cluster
     CorePoints = Frame.getcorePoint(n_clusters_,labels)
     ## Update clusters 
-    Cluster_dict, Next_Cluster_dict, Next_Velocity_dict = Frame.updatecluster(CorePoints,Next_Cluster_dict,n_clusters_,Next_Velocity_dict)
+    Cluster_dict, Next_Cluster_dict, Next_Velocity_dict = Frame.updatecluster(CorePoints,Next_Cluster_dict,n_clusters_,Frame_time)
 
     # populate client imuFrame var with iframe from server
 
