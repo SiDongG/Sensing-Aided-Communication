@@ -1,5 +1,6 @@
 import Radar as R
 import matplotlib.pyplot as plt
+from matplotlib.animation import FuncAnimation
 import numpy as np
 import subprocess
 import os
@@ -89,14 +90,29 @@ cwd = os.getcwd() ##
 print(cwd) ## make sure we're in the right place modify accordingly
 ##client create
 
-plt.ion()
 fig, ax = plt.subplots()
-x, y = [],[]
-sc = ax.scatter(x,y)
-plt.xlim(-10,10)
-plt.ylim(-10,10)
-plt.draw()
+scatter = ax.scatter([], [])
+def update(frame):
+    # Calculate new x and y coordinates
+    x = x_list[-2:]
+    y = y_list[-2:]
 
+    # Update the scatter plot with the new data
+    scatter.set_offsets([[x[0], y[0]], [x[1], y[1]]])
+    
+    # Set the axis limits to keep the plot in view
+    ax.set_xlim(-10, 10)
+    ax.set_ylim(0, 10)
+    
+    # Return the scatter plot object
+    return scatter,
+
+anim = FuncAnimation(fig, update, frames=None, interval=100)
+
+# Show the plot
+plt.show()
+x_list = []
+y_list = []
 f = 0
 client_ips = []
 
@@ -194,10 +210,13 @@ while f < 5: ## get 5 global frames ## change to True later
             print("#### Sending to {}:{} ####".format(client_ips[0], Beamangle1))
             print("#### Sending to {}:{} ####".format(client_ips[1], Beamangle2))
     
-    x.append(KalmanMeasurements[0])
-    y.append(KalmanMeasurements[1])
-    sc.set_offsets(np.c_[x,y])
-    fig.canvas.draw_idle()
+    x_list.append(KalmanMeasurements[0])
+    y_list.append(KalmanMeasurements[1])
+    anim.event_source.stop()
+
+    scatter.set_offsets([[x_list[-2], y_list[-2]], [x_list[-1], y_list[-1]]])
+
+    anim.event_source.start()
 
     Prev_Frame = Frame
     
