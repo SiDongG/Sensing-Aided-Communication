@@ -14,6 +14,7 @@ from IMU import iframe
 class client():
     def __init__(self, IMUdata, ip_address):   
         self.id = ip_address
+	self.ClusterID = 0
         self.x = -1
         self.y = -1
         self.x_velocity= -1
@@ -227,11 +228,15 @@ class rframe():
             CorePoints[corepoint_id] = CoreSum[corepoint_id]/CoreNum[corepoint_id]
         return CorePoints
     
-    def updatecluster(self,CorePoints,Next_Cluster_dict,n_clusters_,Next_Velocity_dict):
+    def updatecluster(self,CorePoints,Next_Cluster_dict,n_clusters_, Frame_time):
 
         Cluster_dict = Next_Cluster_dict.copy()
 
         Next_Cluster_dict = {}
+	
+	Next_Velocity_dict = {}
+	
+	Threshold = {0:10,1:10,2:10,3:10,4:10,5:10,6:10,7:10,8:10,9:10,10:10}
         
         if Cluster_dict:
             if len(Cluster_dict) >= n_clusters_:
@@ -244,7 +249,9 @@ class rframe():
                         if dis < Min_dis:
                             Min_key = keys
                             Min_dis = dis
-                    Next_Cluster_dict[Min_key] = CorePoints[corepoint_id]
+		    if Min_dis < Threshold[Min_key]:
+   `	                Next_Cluster_dict[Min_key] = CorePoints[corepoint_id]
+			Threshold[Min_key] = Min_dis
             elif len(Cluster_dict) < n_clusters_:
                 for keys in Cluster_dict:
                     Min_dis = 100
@@ -255,13 +262,15 @@ class rframe():
                         if dis < Min_dis:
                             Min_core_id = corepoint_id
                             Min_dis = dis
-                    Next_Cluster_dict[keys] = CorePoints[Min_core_id]
+		    if Min_dis < Threshold[keys]:			
+                        Next_Cluster_dict[keys] = CorePoints[Min_core_id]
+			Threshold[keys] = Min_dis
 
             for keys in Cluster_dict:
                 if keys in Next_Cluster_dict:
-                    Next_Velocity_dict[keys] = [(Next_Cluster_dict[keys][0] - Cluster_dict[keys][0]) / 0.18,
-                                            (Next_Cluster_dict[keys][1] - Cluster_dict[keys][1]) / 0.18,
-                                            (Next_Cluster_dict[keys][2] - Cluster_dict[keys][2]) / 0.18]
+                    Next_Velocity_dict[keys] = [(Next_Cluster_dict[keys][0] - Cluster_dict[keys][0]) / Frame_time,
+                                            (Next_Cluster_dict[keys][1] - Cluster_dict[keys][1]) / Frame_time,
+                                            (Next_Cluster_dict[keys][2] - Cluster_dict[keys][2]) / Frame_time]
             
         else:
             for corepoint_id in range(0,n_clusters_):
@@ -284,15 +293,15 @@ class rframe():
             if dis < Min:
                 Min_id = keys
                 Min = dis
-        client.id = Min_id
+        client.ClusterID = Min_id
 
         return client.id
 
     def kalmanFilter(self,client,Next_Cluster_dict,KalmanMeasurements,KalmanP,Innovation,KalmanF,ConditionalX,ConditionalP):
-        client_id = client.id
+        client_id = client.ClusterID
         SigmaInput = 1
         SigmaNoise = 0.5
-        Delta = 0.18
+        Delta = 0.5
         F = np.array([[1,0,Delta,0],[0,1,0,Delta],[0,0,1,0],[0,0,0,1]])
         Q = SigmaInput**2 * np.array([[Delta**3/3,0,Delta**2/2,0],
         [0,Delta**3/3,0,Delta**2/2],
