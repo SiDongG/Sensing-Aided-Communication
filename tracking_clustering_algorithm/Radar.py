@@ -14,7 +14,7 @@ from IMU import iframe
 class client():
     def __init__(self, IMUdata, ip_address):   
         self.id = ip_address
-	self.ClusterID = 0
+        self.ClusterID = 0
         self.x = -1
         self.y = -1
         self.x_velocity= -1
@@ -234,9 +234,9 @@ class rframe():
 
         Next_Cluster_dict = {}
 	
-	Next_Velocity_dict = {}
+        Next_Velocity_dict = {}
 	
-	Threshold = {0:10,1:10,2:10,3:10,4:10,5:10,6:10,7:10,8:10,9:10,10:10}
+        Threshold = {0:10,1:10,2:10,3:10,4:10,5:10,6:10,7:10,8:10,9:10,10:10}
         
         if Cluster_dict:
             if len(Cluster_dict) >= n_clusters_:
@@ -249,9 +249,9 @@ class rframe():
                         if dis < Min_dis:
                             Min_key = keys
                             Min_dis = dis
-		    if Min_dis < Threshold[Min_key]:
-   `	                Next_Cluster_dict[Min_key] = CorePoints[corepoint_id]
-			Threshold[Min_key] = Min_dis
+                    if Min_dis < Threshold[Min_key]:
+                        Next_Cluster_dict[Min_key] = CorePoints[corepoint_id]
+                        Threshold[Min_key] = Min_dis
             elif len(Cluster_dict) < n_clusters_:
                 for keys in Cluster_dict:
                     Min_dis = 100
@@ -262,9 +262,9 @@ class rframe():
                         if dis < Min_dis:
                             Min_core_id = corepoint_id
                             Min_dis = dis
-		    if Min_dis < Threshold[keys]:			
+                    if Min_dis < Threshold[keys]:
                         Next_Cluster_dict[keys] = CorePoints[Min_core_id]
-			Threshold[keys] = Min_dis
+                        Threshold[keys] = Min_dis
 
             for keys in Cluster_dict:
                 if keys in Next_Cluster_dict:
@@ -281,15 +281,19 @@ class rframe():
     def findrouter(self, client, Next_Velocity_dict):
         r = [client.x_velocity, client.y_velocity, client.z_velocity]
         q = client.quaternion
+        print(f'before correction:{r}')
         New_r = Direction_Correction(r,q)
         client.x_velocity = New_r[0]
         client.y_velocity = New_r[1]
         client.z_velocity = New_r[2]
+        print(f'iframe: {client.imuFrame}')
     ###find the router###
-        Min = 100
-        Min_id = 100
+        Min = 10000
+        Min_id = 10000
         for keys in Next_Velocity_dict:
             dis =  (Next_Velocity_dict[keys][0]-New_r[0])**2+(Next_Velocity_dict[keys][1]-New_r[1])**2+(Next_Velocity_dict[keys][2]-New_r[2])**2
+            print(f'Distance: {dis}\n New_r: {New_r}')
+            print(f'NVDict: {Next_Velocity_dict}')
             if dis < Min:
                 Min_id = keys
                 Min = dis

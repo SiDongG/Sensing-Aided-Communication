@@ -32,7 +32,7 @@ def handle_client(client_address, clients_dict, lock, ips_list):
                 if addr not in clients_dict.keys():
                     clients_dict[addr] = R.client(imu_frame, addr)
                     ips_list.append(addr)
-                    #print(addr)
+                    print(ips_list)
                 else:
                     clients_dict[addr].update_imu_data(imu_frame)
 def run_radar_collection():
@@ -112,14 +112,16 @@ while f < 5: ## get 5 global frames ## change to True later
     run_radar_collection()
     data_df = pd.read_csv('data.csv')
     nunique_frames = data_df.iloc[:,1].nunique()
+    print(nunique_frames)
     if nunique_frames < 2:
         # if we didn't get enough frames rerun data collection
+        print('less than 2 frames')
         continue
     #here we can edit the csv file.
     #if not both connected then continue
     with clients_lock:
-        if len(client_ips) < 2 or len(clients) < 2:
-            #print("not connected")
+        if len(client_ips) < 2:
+            print("not connected")
             continue
     with clients_lock:
         #ensure clients always the same
