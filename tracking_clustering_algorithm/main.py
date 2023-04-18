@@ -1,6 +1,5 @@
 import Radar as R
 import matplotlib.pyplot as plt
-from matplotlib.animation import FuncAnimation
 import numpy as np
 import subprocess
 import os
@@ -92,27 +91,8 @@ print(cwd) ## make sure we're in the right place modify accordingly
 
 fig, ax = plt.subplots()
 scatter = ax.scatter([], [])
-def update(frame):
-    # Calculate new x and y coordinates
-    x = x_list[-2:]
-    y = y_list[-2:]
-
-    # Update the scatter plot with the new data
-    scatter.set_offsets([[x[0], y[0]], [x[1], y[1]]])
-    
-    # Set the axis limits to keep the plot in view
-    ax.set_xlim(-10, 10)
-    ax.set_ylim(0, 10)
-    
-    # Return the scatter plot object
-    return scatter,
-
-anim = FuncAnimation(fig, update, frames=None, interval=100)
-
-# Show the plot
-plt.show()
-x_list = []
-y_list = []
+x_list = [0, 0]
+y_list = [-5, -5]
 f = 0
 client_ips = []
 
@@ -216,7 +196,8 @@ while f < 5: ## get 5 global frames ## change to True later
 
     scatter.set_offsets([[x_list[-2], y_list[-2]], [x_list[-1], y_list[-1]]])
 
-    anim.event_source.start()
+    plt.draw()
+    plt.pause(0.01)
 
     Prev_Frame = Frame
     
