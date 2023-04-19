@@ -12,6 +12,8 @@ from threading import Thread
 from threading import Lock
 from IMU import *
 import psutil
+from matplotlib.patches import Ellipse
+
 #currentFileCSV = '/Users/shannonholmes/Desktop/Python Programs/AWN/test2.csv'
 HOST, PORT = "192.168.88.21", 1234
 clients = {}
@@ -91,8 +93,8 @@ print(cwd) ## make sure we're in the right place modify accordingly
 
 fig, ax = plt.subplots()
 scatter = ax.scatter([], [])
-x_list = [0, 0]
-y_list = [-5, -5]
+client1_coords = [(0,-5),(0,-5)]
+client2_coords = [(0,-5),(0,-5)]
 f = 0
 client_ips = []
 
@@ -190,14 +192,23 @@ while f < 5: ## get 5 global frames ## change to True later
             print("#### Sending to {}:{} ####".format(client_ips[0], Beamangle1))
             print("#### Sending to {}:{} ####".format(client_ips[1], Beamangle2))
     
-    x_list.append(KalmanMeasurements[0])
-    y_list.append(KalmanMeasurements[1])
-    anim.event_source.stop()
+        client1_pos = (KalmanMeasurements[0][0], KalmanMeasurements[1][0])
+        client2_pos = (KalmanMeasurements2[0][0], KalmanMeasurements2[1][0])
+        client1_coords.append(client1_pos)
+        client2_coords.append(client2_pos)
+        client1_last_two_coords = client1_coords[-2:]
+        client2_last_two_coords = client2_coords[-2:]
+        
+        scatter.set_offsets([client1_last_two_coords, client2_last_two_coords])
 
-    scatter.set_offsets([[x_list[-2], y_list[-2]], [x_list[-1], y_list[-1]]])
-
-    plt.draw()
-    plt.pause(0.01)
+        # Adding an oval for client 1
+        x1, y1 = client1_last_two_coords[-1]
+        width = 2
+        height = 1
+        ellipse = Ellipse(xy=(x1, y1), width=width, height=height, angle=np.degrees(Beamangle1))
+        ax.add_patch(ellipse)
+        plt.draw()
+        plt.pause(0.01)
 
     Prev_Frame = Frame
     
