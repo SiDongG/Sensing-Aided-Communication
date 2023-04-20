@@ -14,6 +14,7 @@ from IMU import iframe
 class client():
     def __init__(self, IMUdata, ip_address):   
         self.id = ip_address
+        self.ClusterID = 0
         self.x = -1
         self.y = -1
         self.x_velocity= -1
@@ -32,6 +33,8 @@ class client():
     def update_imu_data(self, imu_data):
         self.imuFramePrev = self.imuFrame
         self.imuFrame = imu_data
+    def __str__(self):
+        return f'\n #### Client {self.id} ####\ncurrentFrame\n{self.imuFrame}\npreviousFrame{self.imuFramePrev }'
 
 def getData(data_df):
     data = np.array([])
@@ -57,10 +60,8 @@ def Direction_Correction(point,q):
 def quaternion_to_euler(client):
     """
     Convert a quaternion to Euler angles (roll, pitch, yaw) in radians.
-
     Parameters:
         q (numpy.ndarray): A quaternion represented as a four-element numpy array [w, x, y, z].
-
     Returns:
         numpy.ndarray: A three-element numpy array [roll, pitch, yaw] in radians.
     """
@@ -227,11 +228,15 @@ class rframe():
             CorePoints[corepoint_id] = CoreSum[corepoint_id]/CoreNum[corepoint_id]
         return CorePoints
     
-    def updatecluster(self,CorePoints,Next_Cluster_dict,n_clusters_,Next_Velocity_dict):
+    def updatecluster(self,CorePoints,Next_Cluster_dict,n_clusters_, Frame_time):
 
         Cluster_dict = Next_Cluster_dict.copy()
 
         Next_Cluster_dict = {}
+	
+        Next_Velocity_dict = {}
+	
+        Threshold = {0:10,1:10,2:10,3:10,4:10,5:10,6:10,7:10,8:10,9:10,10:10}
         
         if Cluster_dict:
             if len(Cluster_dict) >= n_clusters_:
@@ -244,7 +249,9 @@ class rframe():
                         if dis < Min_dis:
                             Min_key = keys
                             Min_dis = dis
-                    Next_Cluster_dict[Min_key] = CorePoints[corepoint_id]
+                    if Min_dis < Threshold[Min_key]:
+                        Next_Cluster_dict[Min_key] = CorePoints[corepoint_id]
+                        Threshold[Min_key] = Min_dis
             elif len(Cluster_dict) < n_clusters_:
                 for keys in Cluster_dict:
                     Min_dis = 100
@@ -255,13 +262,15 @@ class rframe():
                         if dis < Min_dis:
                             Min_core_id = corepoint_id
                             Min_dis = dis
-                    Next_Cluster_dict[keys] = CorePoints[Min_core_id]
+                    if Min_dis < Threshold[keys]:
+                        Next_Cluster_dict[keys] = CorePoints[Min_core_id]
+                        Threshold[keys] = Min_dis
 
             for keys in Cluster_dict:
                 if keys in Next_Cluster_dict:
-                    Next_Velocity_dict[keys] = [(Next_Cluster_dict[keys][0] - Cluster_dict[keys][0]) / 0.18,
-                                            (Next_Cluster_dict[keys][1] - Cluster_dict[keys][1]) / 0.18,
-                                            (Next_Cluster_dict[keys][2] - Cluster_dict[keys][2]) / 0.18]
+                    Next_Velocity_dict[keys] = [(Next_Cluster_dict[keys][0] - Cluster_dict[keys][0]) / Frame_time,
+                                            (Next_Cluster_dict[keys][1] - Cluster_dict[keys][1]) / Frame_time,
+                                            (Next_Cluster_dict[keys][2] - Cluster_dict[keys][2]) / Frame_time]
             
         else:
             for corepoint_id in range(0,n_clusters_):
@@ -272,27 +281,31 @@ class rframe():
     def findrouter(self, client, Next_Velocity_dict):
         r = [client.x_velocity, client.y_velocity, client.z_velocity]
         q = client.quaternion
+        print(f'before correction:{r}')
         New_r = Direction_Correction(r,q)
         client.x_velocity = New_r[0]
         client.y_velocity = New_r[1]
         client.z_velocity = New_r[2]
+        print(f'iframe: {client.imuFrame}')
     ###find the router###
-        Min = 100
-        Min_id = 100
+        Min = 10000
+        Min_id = 10000
         for keys in Next_Velocity_dict:
-            dis =  norm(Next_Velocity_dict[keys]-New_r)
+            dis =  (Next_Velocity_dict[keys][0]-New_r[0])**2+(Next_Velocity_dict[keys][1]-New_r[1])**2+(Next_Velocity_dict[keys][2]-New_r[2])**2
+            print(f'Distance: {dis}\n New_r: {New_r}')
+            print(f'NVDict: {Next_Velocity_dict}')
             if dis < Min:
                 Min_id = keys
                 Min = dis
-        client.id = Min_id
+        client.ClusterID = Min_id
 
         return client.id
 
     def kalmanFilter(self,client,Next_Cluster_dict,KalmanMeasurements,KalmanP,Innovation,KalmanF,ConditionalX,ConditionalP):
-        client_id = client.id
+        client_id = client.ClusterID
         SigmaInput = 1
         SigmaNoise = 0.5
-        Delta = 0.18
+        Delta = 0.5
         F = np.array([[1,0,Delta,0],[0,1,0,Delta],[0,0,1,0],[0,0,0,1]])
         Q = SigmaInput**2 * np.array([[Delta**3/3,0,Delta**2/2,0],
         [0,Delta**3/3,0,Delta**2/2],
@@ -302,6 +315,7 @@ class rframe():
         R = SigmaNoise**2 * np.identity(2)
 
         NoisyMeasurements = np.zeros((2,1))
+        print(f'Next_Cluster_dict: \n{Next_Cluster_dict}\nclientid: {client_id}')
         NoisyMeasurements[0,:] = Next_Cluster_dict[client_id][0]
         NoisyMeasurements[1,:] = Next_Cluster_dict[client_id][1]
 

@@ -20,11 +20,14 @@ def handle_client(client_address):
             #print(imu_frame)
             with clients_lock:
                 if addr not in clients.keys():
-                    clients[addr] = R.client(imu_frame, client_address)
+                    clients[addr] = R.client(imu_frame, addr)
                     client_ips.append(addr)
                     print(addr)
                 else:
-                    clients[addr] = clients[client_address].update_imu_data(imu_frame)
+                    try:
+                        clients[addr] = clients[addr].update_imu_data(imu_frame)
+                    except:
+                        print ("client: {}, client addr: {}, value types: {}".format(clients, addr, type(clients[addr])))
 for i in range(2):
     client_address = ("", PORT + i + 1)
     Thread(target = handle_client, args = (client_address,), daemon=True).start()

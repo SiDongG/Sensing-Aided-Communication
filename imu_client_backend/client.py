@@ -11,9 +11,9 @@ client_index = 1  # change this to 1 for the second client
 PORT = SERVER_PORT + client_index + 1
 
 data = i.get_imu_data()
-sock.settimeout(2.0)
 sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 sock.bind(("", PORT))
+sock.settimeout(2.0)
 # Create a socket (SOCK_DGRAM means a UDP socket)
 # Connect to server and send data
 while True:
@@ -35,4 +35,8 @@ while True:
     #print("#### RECEIVED FROM {}: {} ####".format(server_address, beamangle))
         time.sleep(1)
         continue
-    sleep(1)
+    time.sleep(1)
+<<<<<<< Updated upstream
+
+=======
+>>>>>>> Stashed changes

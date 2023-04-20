@@ -9,6 +9,10 @@ import pandas as pd
 import time
 import socket
 from threading import Thread
+from threading import Lock
+from IMU import *
+import psutil
+from matplotlib.patches import Ellipse
 
 #currentFileCSV = '/Users/shannonholmes/Desktop/Python Programs/AWN/test2.csv'
 HOST, PORT = "192.168.88.21", 1234
@@ -16,18 +20,23 @@ clients = {}
 clients_lock = Lock()
 collect_radar_data = './run.sh data.csv > output.txt 2>&1'
 
-def handle_client(client_address):
+def handle_client(client_address, clients_dict, lock, ips_list):
     with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:
         sock.bind(client_address)
         while True:
             data, addr = sock.recvfrom(1024)
+            print(f'Received data from {addr}: {data}')
             imu_data = [float(val) for val in data.decode().split(',')]
             imu_frame = iframe(imu_data)
-            with clients_lock:
-                if client_address not in clients.keys():
-                    clients[client_address] = R.client(imu_frame)
+            #print(imu_frame)
+            with lock:
+                #print("in thread... ", clients_dict)
+                if addr not in clients_dict.keys():
+                    clients_dict[addr] = R.client(imu_frame, addr)
+                    ips_list.append(addr)
+                    print(ips_list)
                 else:
-                    clients[client_address] = clients[client_address].update_imu_data(imu_frame)
+                    clients_dict[addr].update_imu_data(imu_frame)
 def run_radar_collection():
     process = subprocess.Popen(collect_radar_data, cwd=cwd, shell = True)
     time.sleep(args.time)
@@ -37,6 +46,7 @@ def run_radar_collection():
     for proc in psutil.process_iter(['pid', 'create_time', 'username', 'cmdline']):
         if ct - proc.info['create_time'] < 5 and proc.username() == usr and proc.pid not in terminated_pids and proc.pid != os.getpid() and 'python' not in proc.info['cmdline']:
             try:
+    #            print("\n killing... ", proc.info['cmdline'])
                 proc.kill()
                 terminated_pids.add(proc.pid)
             except psutil.NoSuchProcess:
@@ -74,41 +84,55 @@ ConditionalX2 = np.zeros((4,1))
 ConditionalP2 = np.identity(4)
 
 parser = argparse.ArgumentParser(description='This is a script that performs client localization and beam angle calculation based on radar and IMU data')
-parser.add_argument('time', type=int, help='time in seconds to let radar run for', required = True)
+parser.add_argument('-time', type=int, default = 3, help='time in seconds to let radar run for,default = 3', required=False)
 args = parser.parse_args()
 
 cwd = os.getcwd() ##
 print(cwd) ## make sure we're in the right place modify accordingly
 ##client create
-x = 0
+
+fig, ax = plt.subplots()
+scatter = ax.scatter([], [])
+client1_coords = [(0,-5),(0,-5)]
+client2_coords = [(0,-5),(0,-5)]
+f = 0
 client_ips = []
-client1 = R.client()
-client2 = R.client()
 
 Start = False
+
+#start client threads
 for i in range(2):
     client_address = ("", PORT + i + 1)
-    Thread(target = handle_client, args = (client_address,), daemon=True).start()
-while(x < 5): ## get 5 global frames ## change to True later
+    Thread(target = handle_client, args = (client_address, clients, clients_lock, client_ips), daemon=True).start()
+
+
+while f < 5: ## get 5 global frames ## change to True later
     run_radar_collection()
     data_df = pd.read_csv('data.csv')
     nunique_frames = data_df.iloc[:,1].nunique()
+    print(nunique_frames)
     if nunique_frames < 2:
         # if we didn't get enough frames rerun data collection
+        print('less than 2 frames')
         continue
     #here we can edit the csv file.
+    #if not both connected then continue
     with clients_lock:
-        #if first loop, assign client 1/2's ip address
-        if not Start:
-            for client in clients:
-                client_ips.append(client.id)
-
-        #ensure client1 and client2 always stay the same
+        if len(client_ips) < 2:
+            print("not connected")
+            continue
+    with clients_lock:
+        #ensure clients always the same
+        #print id(clients)
+        #print('client_ips: ', client_ips)
+        #print('clientes_dict', clients)
         client1 = clients[client_ips[0]]
         client2 = clients[client_ips[1]]
-
+    print(f'### client1 ###\n{client1}\n### client2 ###\n{client2}')
+    #check_connections() 
     if Start == False:
         Start_time = time.time()
+        Frame_time = 1
     else:
         Stop_time = time.time()
         Frame_time = Stop_time - Start_time
@@ -117,7 +141,7 @@ while(x < 5): ## get 5 global frames ## change to True later
     
     #check what the name of this column is#
     num_frames = data_df.iloc[:,1].nunique()
-    print("DEBUG: Number of unique frames: ", num_frames)
+    #print("DEBUG: Number of unique frames: ", num_frames)
     ##TODO migrate these calls the global frame function##
         ## Get data function returns first time, last time in one global frame and frametime between microframe (if it is not the first micro frame in global frame)
     data = R.getData(data_df)
@@ -132,7 +156,7 @@ while(x < 5): ## get 5 global frames ## change to True later
     ## Get Core points of each unique cluster
     CorePoints = Frame.getcorePoint(n_clusters_,labels)
     ## Update clusters 
-    Cluster_dict, Next_Cluster_dict, Next_Velocity_dict = Frame.updatecluster(CorePoints,Next_Cluster_dict,n_clusters_,Next_Velocity_dict)
+    Cluster_dict, Next_Cluster_dict, Next_Velocity_dict = Frame.updatecluster(CorePoints,Next_Cluster_dict,n_clusters_,Frame_time)
 
     # populate client imuFrame var with iframe from server
 
@@ -156,28 +180,38 @@ while(x < 5): ## get 5 global frames ## change to True later
         ## Get Beamforming angle
         Theta = Frame.getEstimate (client1,client2)
 
-        Beamangle = R.beamform_angle(Theta,client1)
-
+        Beamangle1 = R.beamform_angle(Theta,client1)
+        
+        print(f'beama: {Beamangle1}')
         #why is there only one beam angle?
+        Beamangle2 = 20
         with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as s:
             with clients_lock:
-                s.sendto(str(Beamangle).encode(), (client_ips[0], PORT))
-                s.sendto(str(Beamangle).encode(), (client_ips[1], PORT))
-                print("#### Sending to {}:{} ####".format(client_ips[0], Beamangle))
-                print("#### Sending to {}:{} ####".format(client_ips[1], Beamangle))
+                s.sendto(str(Beamangle1).encode(), client1.id)
+                s.sendto(str(Beamangle2).encode(), client2.id)
+            print("#### Sending to {}:{} ####".format(client_ips[0], Beamangle1))
+            print("#### Sending to {}:{} ####".format(client_ips[1], Beamangle2))
     
+        client1_pos = (KalmanMeasurements[0][0], KalmanMeasurements[1][0])
+        client2_pos = (KalmanMeasurements2[0][0], KalmanMeasurements2[1][0])
+        client1_coords.append(client1_pos)
+        client2_coords.append(client2_pos)
+        client1_last_two_coords = client1_coords[-2:]
+        client2_last_two_coords = client2_coords[-2:]
+        
+        scatter.set_offsets([client1_last_two_coords, client2_last_two_coords])
+
+        # Adding an oval for client 1
+        x1, y1 = client1_last_two_coords[-1]
+        width = 2
+        height = 1
+        ellipse = Ellipse(xy=(x1, y1), width=width, height=height, angle=np.degrees(Beamangle1))
+        ax.add_patch(ellipse)
+        plt.draw()
+        plt.pause(0.01)
+
     Prev_Frame = Frame
     
-    frame_num += 1
+    frame_num = str(int(frame_num)+1)
     Start = True
-    x += 1  
-    """     fig = plt.figure()
-    ax =  fig.add_subplot(projection='3d')
-    
-    for row in total_Cluster_Kalman:
-        ax.scatter(row[0],row[1])
-    
-    ax.set_xlabel('X Label')
-    ax.set_ylabel('Y Label')
-    
-    plt.show() """
+    f += 1  
