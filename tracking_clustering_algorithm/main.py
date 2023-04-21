@@ -93,8 +93,11 @@ print(cwd) ## make sure we're in the right place modify accordingly
 
 fig, ax = plt.subplots()
 scatter = ax.scatter([], [])
-client1_coords = [(0,-5),(0,-5)]
-client2_coords = [(0,-5),(0,-5)]
+client1_coords = [[0,-5],[0,-5]]
+client2_coords = [[0,-5],[0,-5]]
+ax.set_xlim([-10, 10])
+ax.set_ylim([-10, 10])
+
 f = 0
 client_ips = []
 
@@ -106,7 +109,7 @@ for i in range(2):
     Thread(target = handle_client, args = (client_address, clients, clients_lock, client_ips), daemon=True).start()
 
 
-while f < 5: ## get 5 global frames ## change to True later
+while True: ## get 5 global frames ## change to True later
     run_radar_collection()
     data_df = pd.read_csv('data.csv')
     nunique_frames = data_df.iloc[:,1].nunique()
@@ -170,6 +173,7 @@ while f < 5: ## get 5 global frames ## change to True later
     if Start == True:
         client1_id = Frame.findrouter(client1, Next_Velocity_dict)
         client2_id = Frame.findrouter(client2, Next_Velocity_dict)
+        
 
         KalmanMeasurements,KalmanP,Innovation,KalmanF,ConditionalX,ConditionalP = Frame.kalmanFilter\
                 (client1,Next_Cluster_dict,KalmanMeasurements,KalmanP,Innovation,KalmanF,ConditionalX,ConditionalP)
@@ -180,7 +184,7 @@ while f < 5: ## get 5 global frames ## change to True later
         ## Get Beamforming angle
         Theta = Frame.getEstimate (client1,client2)
 
-        Beamangle1 = R.beamform_angle(Theta,client1)
+        canBeamForm, Beamangle1 = R.beamform_angle(Theta,client1)
         
         print(f'beama: {Beamangle1}')
         #why is there only one beam angle?
@@ -192,24 +196,32 @@ while f < 5: ## get 5 global frames ## change to True later
             print("#### Sending to {}:{} ####".format(client_ips[0], Beamangle1))
             print("#### Sending to {}:{} ####".format(client_ips[1], Beamangle2))
     
-        client1_pos = (KalmanMeasurements[0][0], KalmanMeasurements[1][0])
-        client2_pos = (KalmanMeasurements2[0][0], KalmanMeasurements2[1][0])
+        client1_pos = [KalmanMeasurements[0][0], KalmanMeasurements[1][0]]
+        client2_pos = [KalmanMeasurements2[0][0], KalmanMeasurements2[1][0]]
         client1_coords.append(client1_pos)
         client2_coords.append(client2_pos)
-        client1_last_two_coords = client1_coords[-2:]
-        client2_last_two_coords = client2_coords[-2:]
+        client1_last_two_coords = np.vstack(client1_coords[-2:])
+        client2_last_two_coords = np.vstack(client2_coords[-2:])
+        all_coords = np.concatenate((client1_last_two_coords, client2_last_two_coords), axis = 0)
+        colors = ['b', 'r', 'lightskyblue', 'lightcoral']
         
-        scatter.set_offsets([client1_last_two_coords, client2_last_two_coords])
-
+        scatter.set_offsets(all_coords)
+        scatter.set_color(colors)
+        print(f'\nclient1 coords:{client1_coords}\nclient2 coords:{client2_coords}')
+        print(f'\nlast_two1:{client1_last_two_coords}')
+        print(f'\nclientid1:{client1_id}')
+        print(f'\nclientid2:{client2_id}')
         # Adding an oval for client 1
         x1, y1 = client1_last_two_coords[-1]
         width = 2
         height = 1
-        ellipse = Ellipse(xy=(x1, y1), width=width, height=height, angle=np.degrees(Beamangle1))
-        ax.add_patch(ellipse)
+        ellipse = Ellipse(xy=(x1, y1), width=width, height=height, angle=np.degrees(Beamangle1), facecolor="yellow")
+        if canBeamForm:
+            ax.add_patch(ellipse)
         plt.draw()
-        plt.pause(0.01)
-
+        plt.pause(0.1)
+        if canBeamForm:
+            ellipse.remove()
     Prev_Frame = Frame
     
     frame_num = str(int(frame_num)+1)

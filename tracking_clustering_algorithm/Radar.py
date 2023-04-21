@@ -174,9 +174,10 @@ def beamform_angle(Theta, client1):
 
     ori_range_lowerbound = angle_orient - math.pi / 2
     ori_range_upperbound = angle_orient + math.pi / 2
-
+    beamBool = False
     if Theta >= ori_range_lowerbound and Theta <= ori_range_upperbound:
         print('Can beamform')
+        beamBool = True
         BF_angle = abs(Theta - angle_orient)
         angle_from_lowerbound = Theta - ori_range_lowerbound
         # beamform angle is some radian to the left or right of the center, so BF_angle in [0,pi/2]
@@ -189,7 +190,7 @@ def beamform_angle(Theta, client1):
         print('Cannot beamform')
         BF_angle = 100  #  does not mean angle is 100, mean to be set as AUTO mode for router
 
-    return BF_angle  # in radian
+    return beamBool, BF_angle  # in radian
 
 
 class rframe():
@@ -298,8 +299,8 @@ class rframe():
                 Min_id = keys
                 Min = dis
         client.ClusterID = Min_id
-
-        return client.id
+        print(f'Min_id:{Min_id}')
+        return client.ClusterID
 
     def kalmanFilter(self,client,Next_Cluster_dict,KalmanMeasurements,KalmanP,Innovation,KalmanF,ConditionalX,ConditionalP):
         client_id = client.ClusterID
