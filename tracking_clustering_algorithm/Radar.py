@@ -26,15 +26,29 @@ class client():
         self.quaternion=Quaternion(1,0,0,0)
         self.x_estimate = -1
         self.y_estimate = -1
-        
+        self.firstFrame = True
         self.imuFrame = IMUdata
+        self.x_accel_offset = 0
+        self.y_accel_offset = 0
+        self.z_accel_offset = 0
         self.imuFramePrev = iframe([-1,-1,-1,-1,-1,-1])
     
     def update_imu_data(self, imu_data):
+        self.recalibrate()
         self.imuFramePrev = self.imuFrame
         self.imuFrame = imu_data
     def __str__(self):
         return f'\n #### Client {self.id} ####\ncurrentFrame\n{self.imuFrame}\npreviousFrame{self.imuFramePrev }'
+    def recalibrate(self):
+        if self.firstFrame:
+            self.x_accel_offset = self.imuFrame.accel_x
+            self.y_accel_offset = self.imuFrame.accel_y
+            self.z_accel_offset = self.imuFrame.accel_z
+            self.firstFrame = False
+        self.imuFrame.accel_x -= self.x_accel_offset
+        self.imuFrame.accel_y -= self.y_accel_offset
+        self.imuFrame.accel_z -= self.z_accel_offset
+
 
 def getData(data_df):
     data = np.array([])
@@ -229,78 +243,138 @@ class rframe():
             CorePoints[corepoint_id] = CoreSum[corepoint_id]/CoreNum[corepoint_id]
         return CorePoints
     
-    def updatecluster(self,CorePoints,Next_Cluster_dict,n_clusters_, Frame_time):
-
+    def updatecluster(self,CorePoints,Next_Cluster_dict,n_clusters_, Frame_time, Track, client1, client2):
+        id1 = client1.ClusterID
+        id2 = client2.ClusterID
         Cluster_dict = Next_Cluster_dict.copy()
-
+        print(f'lol:{Cluster_dict}')
         Next_Cluster_dict = {}
-	
+        print(f'corepoints:{CorePoints}')
         Next_Velocity_dict = {}
 	
-        Threshold = {0:10,1:10,2:10,3:10,4:10,5:10,6:10,7:10,8:10,9:10,10:10}
+        Threshold = {0:10,1:10,2:10,3:10,4:10,5:10,6:10,7:10,8:10,9:10,10:10,11:10,12:10,13:10,14:10,15:10}
         
         if Cluster_dict:
-            if len(Cluster_dict) >= n_clusters_:
+            if Track == True:
+                Min_dis = 100
+                Min_key = 100
                 for corepoint_id in range (0,n_clusters_):
-                    Min_dis = 100
-                    Min_key = 100
-                    for keys in Cluster_dict:
-                        dis = (Cluster_dict[keys][0]-CorePoints[corepoint_id][0])**2+(Cluster_dict[keys][1]-CorePoints[corepoint_id][1])**2\
-                                +(Cluster_dict[keys][2]-CorePoints[corepoint_id][2])**2
+                    dis = (Cluster_dict[id1][0]-CorePoints[corepoint_id][0])**2+(Cluster_dict[id1][1]-CorePoints[corepoint_id][1])**2\
+                            +(Cluster_dict[id1][2]-CorePoints[corepoint_id][2])**2
+                    if dis < Min_dis:
+                        Min_key = corepoint_id
+                        Min_dis = dis
+                core1 = Min_key
+                print(f'Minkey:{Min_key}')
+                Next_Cluster_dict[id1] = CorePoints[Min_key]
+                Min_dis = 100
+                Min_key = 100
+                for corepoint_id in range (0,n_clusters_):
+                    if corepoint_id != core1:
+                        dis = (Cluster_dict[id2][0]-CorePoints[corepoint_id][0])**2+(Cluster_dict[id2][1]-CorePoints[corepoint_id][1])**2\
+                                +(Cluster_dict[id2][2]-CorePoints[corepoint_id][2])**2
                         if dis < Min_dis:
-                            Min_key = keys
+                            Min_key = corepoint_id
                             Min_dis = dis
-                    if Min_dis < Threshold[Min_key]:
-                        Next_Cluster_dict[Min_key] = CorePoints[corepoint_id]
-                        Threshold[Min_key] = Min_dis
-            elif len(Cluster_dict) < n_clusters_:
-                for keys in Cluster_dict:
-                    Min_dis = 100
-                    Min_core_id = 100
-                    for corepoint_id in range(0,n_clusters_):
-                        dis = (Cluster_dict[keys][0]-CorePoints[corepoint_id][0])**2+(Cluster_dict[keys][1]-CorePoints[corepoint_id][1])**2\
-                                +(Cluster_dict[keys][2]-CorePoints[corepoint_id][2])**2
-                        if dis < Min_dis:
-                            Min_core_id = corepoint_id
-                            Min_dis = dis
-                    if Min_dis < Threshold[keys]:
-                        Next_Cluster_dict[keys] = CorePoints[Min_core_id]
-                        Threshold[keys] = Min_dis
 
-            for keys in Cluster_dict:
-                if keys in Next_Cluster_dict:
-                    Next_Velocity_dict[keys] = [(Next_Cluster_dict[keys][0] - Cluster_dict[keys][0]) / Frame_time,
-                                            (Next_Cluster_dict[keys][1] - Cluster_dict[keys][1]) / Frame_time,
-                                            (Next_Cluster_dict[keys][2] - Cluster_dict[keys][2]) / Frame_time]
+                Next_Cluster_dict[id2] = CorePoints[Min_key]
+
+
+
+
+
+            else:
+                if len(Cluster_dict) >= n_clusters_:
+                    for corepoint_id in range (0,n_clusters_):
+                        Min_dis = 100
+                        Min_key = 100
+                        for keys in Cluster_dict:
+                            dis = (Cluster_dict[keys][0]-CorePoints[corepoint_id][0])**2+(Cluster_dict[keys][1]-CorePoints[corepoint_id][1])**2\
+                                    +(Cluster_dict[keys][2]-CorePoints[corepoint_id][2])**2
+                            if dis < Min_dis:
+                                Min_key = keys
+                                Min_dis = dis
+                        if Min_dis < Threshold[Min_key]:
+                            Next_Cluster_dict[Min_key] = CorePoints[corepoint_id]
+                            Threshold[Min_key] = Min_dis
+                elif len(Cluster_dict) < n_clusters_:
+                    for keys in Cluster_dict:
+                        Min_dis = 100
+                        Min_core_id = 100
+                        for corepoint_id in range(0,n_clusters_):
+                            if corepoint_id not in Next_Cluster_dict.keys():
+                                dis = (Cluster_dict[keys][0]-CorePoints[corepoint_id][0])**2+(Cluster_dict[keys][1]-CorePoints[corepoint_id][1])**2\
+                                        +(Cluster_dict[keys][2]-CorePoints[corepoint_id][2])**2
+                                if dis < Min_dis:
+                                    Min_core_id = corepoint_id
+                                    Min_dis = dis
+                        if Min_dis < Threshold[Min_core_id]:
+                            Next_Cluster_dict[keys] = CorePoints[Min_core_id]
+                            Threshold[Min_core_id] = Min_dis
+
+                for keys in Cluster_dict:
+                    if keys in Next_Cluster_dict:
+                        Next_Velocity_dict[keys] = [(Next_Cluster_dict[keys][0] - Cluster_dict[keys][0]) / Frame_time,
+                                                (Next_Cluster_dict[keys][1] - Cluster_dict[keys][1]) / Frame_time,
+                                                (Next_Cluster_dict[keys][2] - Cluster_dict[keys][2]) / Frame_time]
             
         else:
             for corepoint_id in range(0,n_clusters_):
                 Next_Cluster_dict[corepoint_id] = CorePoints[corepoint_id]
-
+        print(f'Next_Cluster_dict: {Next_Cluster_dict}')
         return Cluster_dict, Next_Cluster_dict, Next_Velocity_dict
     
-    def findrouter(self, client, Next_Velocity_dict):
-        r = [client.x_velocity, client.y_velocity, client.z_velocity]
-        q = client.quaternion
-        print(f'before correction:{r}')
-        New_r = Direction_Correction(r,q)
-        client.x_velocity = New_r[0]
-        client.y_velocity = New_r[1]
-        client.z_velocity = New_r[2]
-        print(f'iframe: {client.imuFrame}')
-    ###find the router###
-        Min = 10000
-        Min_id = 10000
-        for keys in Next_Velocity_dict:
-            dis =  (Next_Velocity_dict[keys][0]-New_r[0])**2+(Next_Velocity_dict[keys][1]-New_r[1])**2+(Next_Velocity_dict[keys][2]-New_r[2])**2
-            print(f'Distance: {dis}\n New_r: {New_r}')
-            print(f'NVDict: {Next_Velocity_dict}')
-            if dis < Min:
-                Min_id = keys
-                Min = dis
-        client.ClusterID = Min_id
-        print(f'Min_id:{Min_id}')
-        return client.ClusterID
+    def findrouter(self, client1, client2, Next_Velocity_dict, Next_Cluster_dict, distance):
+
+        D = {}
+        if distance == True:
+            for keys in Next_Cluster_dict:
+                D[norm(Next_Cluster_dict[keys][0]**2+Next_Cluster_dict[keys][1]**2)] = keys
+            sortedD = sorted(D)
+            print(f'D:{D}')
+            print(f'sortedD:{sortedD}')
+            client1.ClusterID = D[sortedD[0]]
+            client2.ClusterID = D[sortedD[1]]
+
+
+        else:
+            r1 = [client1.x_velocity, client1.y_velocity, client1.z_velocity]
+            r2 = [client2.x_velocity, client2.y_velocity, client2.z_velocity]
+            #q = client.quaternion
+            #print(f'before correction:{r}')
+            #New_r = Direction_Correction(r,q)
+            #client.x_velocity = New_r[0]
+            #client.y_velocity = New_r[1]
+            #client.z_velocity = New_r[2]
+            #print(f'iframe: {client.imuFrame}')
+            ###find the router###
+            Min = 10000
+            Min_id = 10000
+            for keys in Next_Velocity_dict:
+                dis =  (Next_Velocity_dict[keys][0]-r1[0])**2+(Next_Velocity_dict[keys][1]-r1[1])**2+(Next_Velocity_dict[keys][2]-r1[2])**2
+                print(f'Distance: {dis}\n r1: {r1}')
+                print(f'NVDict: {Next_Velocity_dict}')
+                if dis < Min:
+                    Min_id = keys
+                    Min = dis
+
+            client1.ClusterID = Min_id
+
+            Min = 10000
+            Min_id = 10000
+            for keys in Next_Velocity_dict:
+                if keys != client1.ClusterID:
+                    dis =  (Next_Velocity_dict[keys][0]-r2[0])**2+(Next_Velocity_dict[keys][1]-r2[1])**2+(Next_Velocity_dict[keys][2]-r2[2])**2
+                    print(f'Distance: {dis}\n r2: {r2}')
+                    print(f'NVDict: {Next_Velocity_dict}')
+                    if dis < Min:
+                        Min_id = keys
+                        Min = dis
+
+            client2.ClusterID = Min_id
+
+ 
+        return client1.ClusterID, client2.ClusterID
 
     def kalmanFilter(self,client,Next_Cluster_dict,KalmanMeasurements,KalmanP,Innovation,KalmanF,ConditionalX,ConditionalP):
         client_id = client.ClusterID
@@ -316,7 +390,6 @@ class rframe():
         R = SigmaNoise**2 * np.identity(2)
 
         NoisyMeasurements = np.zeros((2,1))
-        print(f'Next_Cluster_dict: \n{Next_Cluster_dict}\nclientid: {client_id}')
         NoisyMeasurements[0,:] = Next_Cluster_dict[client_id][0]
         NoisyMeasurements[1,:] = Next_Cluster_dict[client_id][1]
 

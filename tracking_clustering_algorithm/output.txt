@@ -1,47 +1,32 @@
 Socket created(10)
 Connection failed !
-[33m[ WARN] [1682034860.828330827]: Frame Counter : 282689[0m
-[33m[ WARN] [1682034860.828926595]: Total number of points : 678[0m
-[33m[ WARN] [1682034860.876709998]: Frame Counter : 282690[0m
-[33m[ WARN] [1682034860.876749023]: Total number of points : 723[0m
-... logging to /home/marga3/.ros/log/ab019928-dfd6-11ed-9ef3-ebf0ff4350c2/roslaunch-marga3-laptop-35476.log
+... logging to /home/marga_share/.ros/log/1cd847f4-e06d-11ed-b513-19c11d82bfc8/roslaunch-marganuc1-362974.log
 Checking log directory for disk usage. This may take a while.
 Press Ctrl-C to interrupt
 Done checking log file disk usage. Usage is <1GB.
-]2;/home/marga3/work/RETINA_4SN_RVIZ_DevMode/rviz/4sn_viewer/catkin_ws/src/retina4sn_viewer/share/srs_4sn.launch
-[1mstarted roslaunch server http://marga3-laptop:34615/[0m
+]2;/home/marga_share/RETINA_4SN_RVIZ_DevMode_orig/rviz/4sn_viewer/catkin_ws/src/retina4sn_viewer/share/srs_4sn.launch
+[1mstarted roslaunch server http://marganuc1:38145/[0m
 
 SUMMARY
 ========
 
 PARAMETERS
  * /retina4sn_node/ip_addr: 192.168.30.1
- * /retina4sn_node/offset_rot: 0.0
- * /retina4sn_node/offset_x: 0.0
- * /retina4sn_node/offset_y: 0.0
- * /retina4sn_node/offset_z: 0.0
- * /retina4sn_node/output_file: ./data.csv
+ * /retina4sn_node/output_file: /home/marga_share...
  * /rosdistro: noetic
- * /rosversion: 1.16.0
+ * /rosversion: 1.15.14
 
 NODES
   /
     retina4sn_node (retina4sn_viewer/retina4sn_node)
     rviz (rviz/rviz)
 
-auto-starting new master
-[1mprocess[master]: started with pid [35499][0m
 [1mROS_MASTER_URI=http://localhost:11311[0m
-]2;/home/marga3/work/RETINA_4SN_RVIZ_DevMode/rviz/4sn_viewer/catkin_ws/src/retina4sn_viewer/share/srs_4sn.launch http://localhost:11311
-[1msetting /run_id to ab019928-dfd6-11ed-9ef3-ebf0ff4350c2[0m
-[1mprocess[rosout-1]: started with pid [35524][0m
-started core service [/rosout]
-[1mprocess[retina4sn_node-2]: started with pid [35531][0m
-[1mprocess[rviz-3]: started with pid [35532][0m
-[retina4sn_node-2] killing on exit
-[rviz-3] killing on exit
-[rosout-1] killing on exit
-[master] killing on exit
+]2;/home/marga_share/RETINA_4SN_RVIZ_DevMode_orig/rviz/4sn_viewer/catkin_ws/src/retina4sn_viewer/share/srs_4sn.launch http://localhost:11311
+[1mprocess[retina4sn_node-1]: started with pid [363004][0m
+[1mprocess[rviz-2]: started with pid [363005][0m
+[rviz-2] killing on exit
+[retina4sn_node-1] killing on exit
 shutting down processing monitor...
 ... shutting down processing monitor complete
 [1mdone[0m

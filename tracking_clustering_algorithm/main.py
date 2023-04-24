@@ -18,7 +18,7 @@ from matplotlib.patches import Ellipse
 HOST, PORT = "192.168.88.21", 1234
 clients = {}
 clients_lock = Lock()
-collect_radar_data = './run.sh data.csv > output.txt 2>&1'
+collect_radar_data = './run.sh test.csv > output.txt 2>&1'
 
 def handle_client(client_address, clients_dict, lock, ips_list):
     with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:
@@ -93,15 +93,17 @@ print(cwd) ## make sure we're in the right place modify accordingly
 
 fig, ax = plt.subplots()
 scatter = ax.scatter([], [])
-client1_coords = [[0,-5],[0,-5]]
-client2_coords = [[0,-5],[0,-5]]
-ax.set_xlim([-10, 10])
-ax.set_ylim([-10, 10])
+client1_coords = [[0,0],[0,0]]
+client2_coords = [[0,0],[0,0]]
+ax.set_xlim([-2, 2])
+ax.set_ylim([0, 6])
 
 f = 0
 client_ips = []
 
 Start = False
+Track = False
+Distance = False
 
 #start client threads
 for i in range(2):
@@ -111,7 +113,7 @@ for i in range(2):
 
 while True: ## get 5 global frames ## change to True later
     run_radar_collection()
-    data_df = pd.read_csv('data.csv')
+    data_df = pd.read_csv('test.csv')
     nunique_frames = data_df.iloc[:,1].nunique()
     print(nunique_frames)
     if nunique_frames < 2:
@@ -159,7 +161,7 @@ while True: ## get 5 global frames ## change to True later
     ## Get Core points of each unique cluster
     CorePoints = Frame.getcorePoint(n_clusters_,labels)
     ## Update clusters 
-    Cluster_dict, Next_Cluster_dict, Next_Velocity_dict = Frame.updatecluster(CorePoints,Next_Cluster_dict,n_clusters_,Frame_time)
+    Cluster_dict, Next_Cluster_dict, Next_Velocity_dict = Frame.updatecluster(CorePoints,Next_Cluster_dict,n_clusters_, Frame_time, Distance, client1, client2)
 
     # populate client imuFrame var with iframe from server
 
@@ -170,16 +172,25 @@ while True: ## get 5 global frames ## change to True later
     R.quaternion_to_euler(client1)
     R.quaternion_to_euler(client2)
     ## Identify router and return label of that router, runs every global frame
-    if Start == True:
-        client1_id = Frame.findrouter(client1, Next_Velocity_dict)
-        client2_id = Frame.findrouter(client2, Next_Velocity_dict)
-        
+    if f == 1:
+        Distance = True
 
-        KalmanMeasurements,KalmanP,Innovation,KalmanF,ConditionalX,ConditionalP = Frame.kalmanFilter\
-                (client1,Next_Cluster_dict,KalmanMeasurements,KalmanP,Innovation,KalmanF,ConditionalX,ConditionalP)
+    if Start == True:
+
+        if Track == True:
+            client1_id, client2_id = Frame.findrouter(client1, client2, Next_Velocity_dict, Next_Cluster_dict, Distance)
+            #client2_id = Frame.findrouter(client2, Next_Velocity_dict)
+            print(f'\nclientid1:{client1_id}')
+            print(f'\nclientid2:{client2_id}')
         
-        KalmanMeasurements2,KalmanP2,Innovation2,KalmanF2,ConditionalX2,ConditionalP2 = Frame.kalmanFilter\
-                (client2,Next_Cluster_dict,KalmanMeasurements2,KalmanP2,Innovation2,KalmanF2,ConditionalX2,ConditionalP2)
+        try: 
+            KalmanMeasurements,KalmanP,Innovation,KalmanF,ConditionalX,ConditionalP = Frame.kalmanFilter\
+                    (client1,Next_Cluster_dict,KalmanMeasurements,KalmanP,Innovation,KalmanF,ConditionalX,ConditionalP)
+            
+            KalmanMeasurements2,KalmanP2,Innovation2,KalmanF2,ConditionalX2,ConditionalP2 = Frame.kalmanFilter\
+                    (client2,Next_Cluster_dict,KalmanMeasurements2,KalmanP2,Innovation2,KalmanF2,ConditionalX2,ConditionalP2)
+        except:
+            client1_id, client2_id = Frame.findrouter(client1, client2, Next_Velocity_dict, Next_Cluster_dict, Distance)
 
         ## Get Beamforming angle
         Theta = Frame.getEstimate (client1,client2)
@@ -203,27 +214,35 @@ while True: ## get 5 global frames ## change to True later
         client1_last_two_coords = np.vstack(client1_coords[-2:])
         client2_last_two_coords = np.vstack(client2_coords[-2:])
         all_coords = np.concatenate((client1_last_two_coords, client2_last_two_coords), axis = 0)
-        colors = ['b', 'r', 'lightskyblue', 'lightcoral']
-        
+        print(f'\ncoords{all_coords}')
+        colors = ['lightskyblue','b', 'lightcoral', 'r']
+        x1, y1 = client1_last_two_coords[-1]
+        width = 0.25
+        height = 0.1
+        ellipse = Ellipse(xy=(x1, y1), width=width, height=height, angle=np.degrees(Beamangle1), facecolor="yellow")
+        if canBeamForm:
+            ax.add_patch(ellipse)
         scatter.set_offsets(all_coords)
         scatter.set_color(colors)
         print(f'\nclient1 coords:{client1_coords}\nclient2 coords:{client2_coords}')
         print(f'\nlast_two1:{client1_last_two_coords}')
-        print(f'\nclientid1:{client1_id}')
-        print(f'\nclientid2:{client2_id}')
+
         # Adding an oval for client 1
-        x1, y1 = client1_last_two_coords[-1]
-        width = 2
-        height = 1
-        ellipse = Ellipse(xy=(x1, y1), width=width, height=height, angle=np.degrees(Beamangle1), facecolor="yellow")
-        if canBeamForm:
-            ax.add_patch(ellipse)
+
+        plt.title(f'frame number: {f}')
         plt.draw()
+        plt.savefig(f'plt_num_{f}_.png')
         plt.pause(0.1)
         if canBeamForm:
             ellipse.remove()
     Prev_Frame = Frame
     
     frame_num = str(int(frame_num)+1)
+
     Start = True
+
+    if f == 0:
+        Track = True
+    if f == 1:
+        Track == False 
     f += 1  
