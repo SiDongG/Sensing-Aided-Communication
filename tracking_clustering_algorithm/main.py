@@ -63,25 +63,25 @@ def check_connections():
                     print("Connection to {} has been lost".format(client_address))
 def calc_angles(client1_pos, client2_pos):
 
-	# Calculate the differences in x and y coordinates
-	dx = client2_pos[0] - client1_pos[0]
-	dy = client2_pos[1] - client1_pos[1]
+# Calculate the differences in x and y coordinates
+    dx = client2_pos[0] - client1_pos[0]
+    dy = client2_pos[1] - client1_pos[1]
 
-	# Calculate the angle from point 1 to point 2
-	theta1 = math.degrees(math.atan2(dy, dx))
-	if theta1 < 0:
-    	theta1 += 360
+# Calculate the angle from point 1 to point 2
+    theta1 = math.degrees(math.atan2(dy, dx))
+    if theta1 < 0:
+        theta1 += 360
 
-	# Calculate the angle from point 2 to point 1
-	theta2 = math.degrees(math.atan2(-dy, -dx))
-	if theta2 < 0:
-    	theta2 += 360
-	
+# Calculate the angle from point 2 to point 1
+    theta2 = math.degrees(math.atan2(-dy, -dx))
+    if theta2 < 0:
+        theta2 += 360
 
-	# Print the results
-	print("Angle from point 1 to point 2:", theta1)
-	print("Angle from point 2 to point 1:", theta2)
-	
+
+    # Print the results
+    print("Angle from point 1 to point 2:", theta1)
+    print("Angle from point 2 to point 1:", theta2)
+
 frame_num = '1'
 Frame_time = 0
 ## initialization ##
@@ -219,7 +219,7 @@ while True: ## get 5 global frames ## change to True later
 
         canBeamForm, Beamangle1 = R.beamform_angle(Theta,client1)
         print(f'beama: {Beamangle1}')
-		Beamangl1 = 0
+        Beamangl1 = 0
         #why is there only one beam angle?
         Beamangle2 = 180
         with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as s:
@@ -231,7 +231,7 @@ while True: ## get 5 global frames ## change to True later
     
         client1_pos = [KalmanMeasurements[0][0], KalmanMeasurements[1][0]]
         client2_pos = [KalmanMeasurements2[0][0], KalmanMeasurements2[1][0]]
-		calc_angles(client1_pos, client2_pos)
+        calc_angles(client1_pos, client2_pos)
         client1_coords.append(client1_pos)
         client2_coords.append(client2_pos)
         client1_last_two_coords = np.vstack(client1_coords[-2:])
@@ -240,21 +240,21 @@ while True: ## get 5 global frames ## change to True later
         print(f'\ncoords{all_coords}')
         colors = ['lightskyblue','b', 'lightcoral', 'r']
         x1, y1 = client1_pos
-		x2, y2 = client2_pos
+        x2, y2 = client2_pos
         width = 0.25
-        height = 1.2
-	    # Adding an oval for client 1
-		# Get the coordinates of the most recent positions of client1 and client2
-		# Draw a dashed red line connecting client1 and client2
-		
-        ellipse = Ellipse(xy=(x1, y1), width=width, height=height, angle=np.degrees(Beamangle1), facecolor="ivory")
-        if canBeamForm:
-            ax.add_patch(ellipse)
-		ellipse = Ellipse(xy=(x2, y2), width=width, height=height, angle=np.degrees(Beamangle2), facecolor="ivory")
-        if canBeamForm:
-            ax.add_patch(ellipse)
-		line = plt.plot([x1, x2], [y1, y2], color='r', linestyle='--', linewidth=2)	
-		scatter.set_offsets(all_coords)
+        height = 0.1
+    # Adding an oval for client 1
+    # Get the coordinates of the most recent positions of client1 and client2
+    # Draw a dashed red line connecting client1 and client2
+
+        ellipse1 = Ellipse(xy=(x1, y1), width=width, height=height, angle=np.degrees(Beamangle1), facecolor="ivory")
+        #if canBeamForm:
+        ax.add_patch(ellipse1)
+        ellipse2 = Ellipse(xy=(x2, y2), width=width, height=height, angle=np.degrees(Beamangle2), facecolor="yellow")
+        #if canBeamForm:
+        ax.add_patch(ellipse2)
+        line = plt.plot([x1, x2], [y1, y2], color='r', linestyle='--', linewidth=0.5)
+        scatter.set_offsets(all_coords)
         scatter.set_color(colors)
         print(f'\nclient1 coords:{client1_coords}\nclient2 coords:{client2_coords}')
         print(f'\nlast_two1:{client1_last_two_coords}')
@@ -263,8 +263,10 @@ while True: ## get 5 global frames ## change to True later
         plt.draw()
         plt.savefig(f'plt_num_{f}_.png')
         plt.pause(0.1)
-        if canBeamForm:
-            ellipse.remove()
+        l = line.pop(0)
+        l.remove()
+        ellipse1.remove()
+        ellipse2.remove()
     Prev_Frame = Frame
     
     frame_num = str(int(frame_num)+1)

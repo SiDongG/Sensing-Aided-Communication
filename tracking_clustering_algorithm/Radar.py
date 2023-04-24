@@ -243,7 +243,7 @@ class rframe():
             CorePoints[corepoint_id] = CoreSum[corepoint_id]/CoreNum[corepoint_id]
         return CorePoints
     
-    def updatecluster(self,CorePoints,Next_Cluster_dict,n_clusters_, Frame_time, Track, client1, client2):
+    def updatecluster(self,CorePoints,Next_Cluster_dict,n_clusters_, Frame_time, Distance, client1, client2):
         id1 = client1.ClusterID
         id2 = client2.ClusterID
         Cluster_dict = Next_Cluster_dict.copy()
@@ -255,7 +255,7 @@ class rframe():
         Threshold = {0:10,1:10,2:10,3:10,4:10,5:10,6:10,7:10,8:10,9:10,10:10,11:10,12:10,13:10,14:10,15:10}
         
         if Cluster_dict:
-            if Track == True:
+            if Distance == True:
                 Min_dis = 100
                 Min_key = 100
                 for corepoint_id in range (0,n_clusters_):
@@ -410,7 +410,7 @@ class rframe():
  
     def getEstimate(self, client1, client2):
         ## Calculates the Direction (in radian, between 0 and 360) of client2 wrt client 1
-        ratio = (client2.y-client1.y)/(client2.x-client1.x)
+        ratio = (client2.y-client1.y)/(client2.x-client1.x+0.000001)
         Theta = np.arctan(ratio)
         if client2.x-client1.x < 0:
             Theta = Theta + math.pi
