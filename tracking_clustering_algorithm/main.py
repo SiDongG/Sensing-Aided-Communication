@@ -241,16 +241,16 @@ while True: ## get 5 global frames ## change to True later
         colors = ['lightskyblue','b', 'lightcoral', 'r']
         x1, y1 = client1_pos
         x2, y2 = client2_pos
-        width = 0.25
+        width = 0.5
         height = 0.1
     # Adding an oval for client 1
     # Get the coordinates of the most recent positions of client1 and client2
     # Draw a dashed red line connecting client1 and client2
 
-        ellipse1 = Ellipse(xy=(x1, y1), width=width, height=height, angle=np.degrees(Beamangle1), facecolor="ivory")
+        ellipse1 = Ellipse(xy=(x1+0.5, y1), width=width, height=height, angle=np.degrees(Beamangle1+15), facecolor="ivory")
         #if canBeamForm:
         ax.add_patch(ellipse1)
-        ellipse2 = Ellipse(xy=(x2, y2), width=width, height=height, angle=np.degrees(Beamangle2), facecolor="yellow")
+        ellipse2 = Ellipse(xy=(x2-0.5, y2), width=width, height=height, angle=np.degrees(Beamangle2-15), facecolor="yellow")
         #if canBeamForm:
         ax.add_patch(ellipse2)
         line = plt.plot([x1, x2], [y1, y2], color='r', linestyle='--', linewidth=0.5)
