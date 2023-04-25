@@ -81,7 +81,7 @@ def calc_angles(client1_pos, client2_pos):
     # Print the results
     print("Angle from point 1 to point 2:", theta1)
     print("Angle from point 2 to point 1:", theta2)
-
+    return theta1,theta2
 frame_num = '1'
 Frame_time = 0
 ## initialization ##
@@ -90,6 +90,8 @@ Next_Cluster_dict = {}
 Next_Velocity_dict = {}
 ## KalmanFilter for Client 1
 KalmanMeasurements = np.zeros((4,1))
+KalmanMeasurements[0] = -1
+KalmanMeasurements[1] = 1
 KalmanP = np.zeros((4,4,1))
 Innovation = np.zeros((2,1))
 KalmanF = np.zeros((4,2,1))
@@ -99,6 +101,8 @@ ConditionalP=np.identity(4)
 ## KalmanFilter for Client 2 
 
 KalmanMeasurements2 = np.zeros((4,1))
+KalmanMeasurements2[0] = 0.5
+KalmanMeasurements2[1] = 2
 KalmanP2 = np.zeros((4,4,1))
 Innovation2 = np.zeros((2,1))
 KalmanF2 = np.zeros((4,2,1))
@@ -126,6 +130,7 @@ client_ips = []
 Start = False
 Track = False
 Distance = False
+
 
 #start client threads
 for i in range(2):
@@ -212,6 +217,7 @@ while True: ## get 5 global frames ## change to True later
             KalmanMeasurements2,KalmanP2,Innovation2,KalmanF2,ConditionalX2,ConditionalP2 = Frame.kalmanFilter\
                     (client2,Next_Cluster_dict,KalmanMeasurements2,KalmanP2,Innovation2,KalmanF2,ConditionalX2,ConditionalP2)
         except:
+            print(f'except condition met')
             client1_id, client2_id = Frame.findrouter(client1, client2, Next_Velocity_dict, Next_Cluster_dict, Distance)
 
         ## Get Beamforming angle
@@ -231,7 +237,7 @@ while True: ## get 5 global frames ## change to True later
     
         client1_pos = [KalmanMeasurements[0][0], KalmanMeasurements[1][0]]
         client2_pos = [KalmanMeasurements2[0][0], KalmanMeasurements2[1][0]]
-        calc_angles(client1_pos, client2_pos)
+        Beamangle1, Beamangle2 = calc_angles(client1_pos, client2_pos)
         client1_coords.append(client1_pos)
         client2_coords.append(client2_pos)
         client1_last_two_coords = np.vstack(client1_coords[-2:])
@@ -247,13 +253,43 @@ while True: ## get 5 global frames ## change to True later
     # Get the coordinates of the most recent positions of client1 and client2
     # Draw a dashed red line connecting client1 and client2
 
-        ellipse1 = Ellipse(xy=(x1+0.5, y1), width=width, height=height, angle=np.degrees(Beamangle1+15), facecolor="ivory")
+        ellipse1 = Ellipse(xy=(x1+0.075, y1), width=width, height=height, angle= Beamangle1, facecolor="yellow")
         #if canBeamForm:
         ax.add_patch(ellipse1)
-        ellipse2 = Ellipse(xy=(x2-0.5, y2), width=width, height=height, angle=np.degrees(Beamangle2-15), facecolor="yellow")
+        ellipse2 = Ellipse(xy=(x2-0.075, y2), width=width, height=height, angle= Beamangle2, facecolor="yellow")
         #if canBeamForm:
         ax.add_patch(ellipse2)
-        line = plt.plot([x1, x2], [y1, y2], color='r', linestyle='--', linewidth=0.5)
+        line = plt.plot([x1, x2], [y1, y2], color='r', linestyle='--', linewidth=0.25)
+        #ground truths
+        c1_gt_x1,c1_gt_y1 = 0.5, 2
+        c1_gt_x2,c1_gt_y2 = 0.5, 1.5
+        c1_gt_x3,c1_gt_y3 = 1, 1.5
+        c1_gt_x4,c1_gt_y4 = 1, 2
+        c1_gt_x5,c1_gt_y5 = 1, 2.5
+        c1_gt_x6,c1_gt_y6 = 1.5, 2.5
+        c1_gt_x9,c1_gt_y9 = 1.5, 2.0
+
+        c2_gt_x1, c2_gt_y1 = -1,1
+        c2_gt_x2, c2_gt_y2 = -1, 1.5
+        c2_gt_x3, c2_gt_y3 = -1, 2
+        c2_gt_x4, c2_gt_y4 = -0.5, 2
+        c2_gt_x5, c2_gt_y5 = -0.5, 2.5
+        c2_gt_x6, c2_gt_y6 = -1.0, 2.5
+        c2_gt_x7, c2_gt_y7 = -1.0, 2.0        
+
+        c1_gt_line1 = plt.plot([c1_gt_x1, c1_gt_x2], [c1_gt_y1, c1_gt_y2], color='g', linewidth=0.5)
+        c1_gt_line2 = plt.plot([c1_gt_x2, c1_gt_x3], [c1_gt_y2, c1_gt_y3], color='g', linewidth=0.5)
+        c1_gt_line3 = plt.plot([c1_gt_x3, c1_gt_x4], [c1_gt_y3, c1_gt_y4], color='g', linewidth=0.5)
+        c1_gt_line4 = plt.plot([c1_gt_x4, c1_gt_x5], [c1_gt_y4, c1_gt_y5], color='g', linewidth=0.5)
+        c1_gt_line5 = plt.plot([c1_gt_x5, c1_gt_x6], [c1_gt_y5, c1_gt_y6], color='g', linewidth=0.5)
+        c1_gt_line6 = plt.plot([c1_gt_x6, c1_gt_x9], [c1_gt_y6, c1_gt_y9], color='g', linewidth=0.5)
+        
+        c2_gt_line1 = plt.plot([c2_gt_x1, c2_gt_x2], [c2_gt_y1, c2_gt_y2], color='g', linewidth=0.5)
+        c2_gt_line2 = plt.plot([c2_gt_x2, c2_gt_x3], [c2_gt_y2, c2_gt_y3], color='g', linewidth=0.5)
+        c2_gt_line3 = plt.plot([c2_gt_x3, c2_gt_x4], [c2_gt_y3, c2_gt_y4], color='g', linewidth=0.5)
+        c2_gt_line4 = plt.plot([c2_gt_x4, c2_gt_x5], [c2_gt_y4, c2_gt_y5], color='g', linewidth=0.5)
+        c2_gt_line5 = plt.plot([c2_gt_x5, c2_gt_x6], [c2_gt_y5, c2_gt_y6], color='g', linewidth=0.5)
+        c2_gt_line6 = plt.plot([c2_gt_x6, c2_gt_x7], [c2_gt_y6, c2_gt_y7], color='g', linewidth=0.5)
         scatter.set_offsets(all_coords)
         scatter.set_color(colors)
         print(f'\nclient1 coords:{client1_coords}\nclient2 coords:{client2_coords}')
