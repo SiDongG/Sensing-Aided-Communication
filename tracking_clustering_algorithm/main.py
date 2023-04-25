@@ -312,5 +312,5 @@ while True: ## get 5 global frames ## change to True later
     if f == 0:
         Track = True
     if f == 1:
-        Track == False 
+        Track = False 
     f += 1  

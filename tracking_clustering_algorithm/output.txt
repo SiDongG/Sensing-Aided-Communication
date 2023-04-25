@@ -1,59 +1,15 @@
 Socket created(10)
 Connection failed !
-[33m[ WARN] [1682402862.584039783]: packetlength: 100016[0m
-[33m[ WARN] [1682402862.584669149]: FRAME_SIZE: 100016[0m
-[33m[ WARN] [1682402862.584683757]: Frame Counter : 46743[0m
-[33m[ WARN] [1682402862.584693986]: Total number of points : 2356[0m
-[33m[ WARN] [1682402862.765740615]: packetlength: 100016[0m
-[33m[ WARN] [1682402862.765786538]: FRAME_SIZE: 100016[0m
-[33m[ WARN] [1682402862.765794837]: Frame Counter : 46744[0m
-[33m[ WARN] [1682402862.765802028]: Total number of points : 2165[0m
-[33m[ WARN] [1682402862.961621146]: packetlength: 100016[0m
-[33m[ WARN] [1682402862.961650267]: FRAME_SIZE: 100016[0m
-[33m[ WARN] [1682402862.961658888]: Frame Counter : 46745[0m
-[33m[ WARN] [1682402862.961668163]: Total number of points : 2390[0m
-[33m[ WARN] [1682402863.160681451]: packetlength: 100016[0m
-[33m[ WARN] [1682402863.160719022]: FRAME_SIZE: 100016[0m
-[33m[ WARN] [1682402863.160731278]: Frame Counter : 46746[0m
-[33m[ WARN] [1682402863.160744960]: Total number of points : 2534[0m
-[33m[ WARN] [1682402863.353104890]: packetlength: 100016[0m
-[33m[ WARN] [1682402863.353139863]: FRAME_SIZE: 100016[0m
-[33m[ WARN] [1682402863.353148495]: Frame Counter : 46748[0m
-[33m[ WARN] [1682402863.353157594]: Total number of points : 2631[0m
-[33m[ WARN] [1682402863.540734446]: packetlength: 100016[0m
-[33m[ WARN] [1682402863.540764110]: FRAME_SIZE: 100016[0m
-[33m[ WARN] [1682402863.540772722]: Frame Counter : 46753[0m
-[33m[ WARN] [1682402863.540782164]: Total number of points : 2287[0m
-[33m[ WARN] [1682402863.713412694]: packetlength: 100016[0m
-[33m[ WARN] [1682402863.713442209]: FRAME_SIZE: 100016[0m
-[33m[ WARN] [1682402863.713450532]: Frame Counter : 46754[0m
-[33m[ WARN] [1682402863.713459340]: Total number of points : 2237[0m
-[33m[ WARN] [1682402863.905731660]: packetlength: 100016[0m
-[33m[ WARN] [1682402863.905759277]: FRAME_SIZE: 100016[0m
-[33m[ WARN] [1682402863.905767665]: Frame Counter : 46759[0m
-[33m[ WARN] [1682402863.905778064]: Total number of points : 2596[0m
-[33m[ WARN] [1682402864.073315432]: packetlength: 100016[0m
-[33m[ WARN] [1682402864.073354898]: FRAME_SIZE: 100016[0m
-[33m[ WARN] [1682402864.073362824]: Frame Counter : 46760[0m
-[33m[ WARN] [1682402864.073372854]: Total number of points : 2181[0m
-[33m[ WARN] [1682402864.257841057]: packetlength: 100016[0m
-[33m[ WARN] [1682402864.257875254]: FRAME_SIZE: 100016[0m
-[33m[ WARN] [1682402864.257882582]: Frame Counter : 46765[0m
-[33m[ WARN] [1682402864.257891448]: Total number of points : 2889[0m
-[33m[ WARN] [1682402864.450568920]: packetlength: 100016[0m
-[33m[ WARN] [1682402864.450598779]: FRAME_SIZE: 100016[0m
-[33m[ WARN] [1682402864.450608111]: Frame Counter : 46766[0m
-[33m[ WARN] [1682402864.450617327]: Total number of points : 2780[0m
-[33m[ WARN] [1682402864.620410410]: packetlength: 100016[0m
-[33m[ WARN] [1682402864.620438529]: FRAME_SIZE: 100016[0m
-[33m[ WARN] [1682402864.620447100]: Frame Counter : 46767[0m
-[33m[ WARN] [1682402864.620456196]: Total number of points : 2647[0m
-... logging to /home/marga_share/.ros/log/f7d3f740-e315-11ed-b513-19c11d82bfc8/roslaunch-marganuc1-705665.log
+[33m[ WARN] [1682431588.407178580]: packetlength: 100016[0m
+[33m[ WARN] [1682431588.407973370]: FRAME_SIZE: 100016[0m
+[33m[ WARN] [1682431588.407986551]: Frame Counter : 17863[0m
+[33m[ WARN] [1682431588.407994630]: Total number of points : 915[0m
+... logging to /home/marga_share/.ros/log/f7d3f740-e315-11ed-b513-19c11d82bfc8/roslaunch-marganuc1-720407.log
 Checking log directory for disk usage. This may take a while.
 Press Ctrl-C to interrupt
 Done checking log file disk usage. Usage is <1GB.
 ]2;/home/marga_share/RETINA_4SN_RVIZ_DevMode_orig/rviz/4sn_viewer/catkin_ws/src/retina4sn_viewer/share/srs_4sn.launch
-[1mstarted roslaunch server http://marganuc1:36471/[0m
+[1mstarted roslaunch server http://marganuc1:35097/[0m
 
 SUMMARY
 ========
@@ -71,8 +27,8 @@ NODES
 
 [1mROS_MASTER_URI=http://localhost:11311[0m
 ]2;/home/marga_share/RETINA_4SN_RVIZ_DevMode_orig/rviz/4sn_viewer/catkin_ws/src/retina4sn_viewer/share/srs_4sn.launch http://localhost:11311
-[1mprocess[retina4sn_node-1]: started with pid [705695][0m
-[1mprocess[rviz-2]: started with pid [705696][0m
+[1mprocess[retina4sn_node-1]: started with pid [720438][0m
+[1mprocess[rviz-2]: started with pid [720439][0m
 [rviz-2] killing on exit
 [retina4sn_node-1] killing on exit
 shutting down processing monitor...
