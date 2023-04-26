@@ -238,6 +238,27 @@ while True: ## get 5 global frames ## change to True later
         client1_pos = [KalmanMeasurements[0][0], KalmanMeasurements[1][0]]
         client2_pos = [KalmanMeasurements2[0][0], KalmanMeasurements2[1][0]]
         Beamangle1, Beamangle2 = calc_angles(client1_pos, client2_pos)
+        Beamangles = {Beamangle1: None, Beamangle2: None}
+        for beamangle in Beamangles.keys():
+            if beamangle < -90 or beamangle > 90:
+                if beamangle > 30:
+                    print('sector C')
+                    beamangle-= 60
+                elif beamangle < -30:
+                    print('sector A')
+                    beamangle += 60
+                else:
+                    print('sector B')
+            else:
+                print('cannot actually beamform')
+                Beamangles[beamangle] = tx_dict[beamangle]
+        tx_sector_1 = Beamangles[Beamangle1]
+        tx_sector_2 = Beamangles[Beamangle2]
+        
+        with open('angles_client1.txt', 'w') as f:
+            f.write('position: {client1_pos} angle:{Beamangle1} tx_sector ={tx_sector_1}')
+         with open('angles_client2.txt', 'w') as f:
+             f.write('position: {client2_pos} angle:{Beamangle2} tx_sector ={tx_sector_2}')
         client1_coords.append(client1_pos)
         client2_coords.append(client2_pos)
         client1_last_two_coords = np.vstack(client1_coords[-2:])
@@ -249,9 +270,9 @@ while True: ## get 5 global frames ## change to True later
         x2, y2 = client2_pos
         width = 0.5
         height = 0.1
-    # Adding an oval for client 1
-    # Get the coordinates of the most recent positions of client1 and client2
-    # Draw a dashed red line connecting client1 and client2
+         # Adding an oval for client 1
+         # Get the coordinates of the most recent positions of client1 and client2
+         # Draw a dashed red line connecting client1 and client2
 
         ellipse1 = Ellipse(xy=(x1+0.075, y1), width=width, height=height, angle= Beamangle1, facecolor="yellow")
         #if canBeamForm:
