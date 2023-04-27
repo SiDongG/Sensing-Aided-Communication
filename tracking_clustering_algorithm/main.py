@@ -277,7 +277,7 @@ while True: ## get 5 global frames ## change to True later
         c2_gt_x6, c2_gt_y6 = -1.0, 2.5
         c2_gt_x7, c2_gt_y7 = -1.0, 2.0        
 
-        c1_gt_line1 = plt.plot([c1_gt_x1, c1_gt_x2], [c1_gt_y1, c1_gt_y2], color='g', linewidth=0.5)
+        #c1_gt_line1 = plt.plot([c1_gt_x1, c1_gt_x2], [c1_gt_y1, c1_gt_y2], color='g', linewidth=0.5)
         c1_gt_line2 = plt.plot([c1_gt_x2, c1_gt_x3], [c1_gt_y2, c1_gt_y3], color='g', linewidth=0.5)
         c1_gt_line3 = plt.plot([c1_gt_x3, c1_gt_x4], [c1_gt_y3, c1_gt_y4], color='g', linewidth=0.5)
         c1_gt_line4 = plt.plot([c1_gt_x4, c1_gt_x5], [c1_gt_y4, c1_gt_y5], color='g', linewidth=0.5)
