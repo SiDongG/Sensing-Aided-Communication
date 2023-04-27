@@ -239,6 +239,10 @@ while True: ## get 5 global frames ## change to True later
         client2_pos = [KalmanMeasurements2[0][0], KalmanMeasurements2[1][0]]
         Beamangle1, Beamangle2 = calc_angles(client1_pos, client2_pos)
         Beamangles = {Beamangle1: None, Beamangle2: None}
+        with open('angles_client1.txt', 'w') as f:
+            f.write('BA: {Beamangle1}\n')       
+        with open('angles_client2.txt', 'w') as f:
+            f.write('BA: {Beamangle2}\n')   
         for beamangle in Beamangles.keys():
             if beamangle < -90 or beamangle > 90:
                 if beamangle > 30:
@@ -252,13 +256,14 @@ while True: ## get 5 global frames ## change to True later
             else:
                 print('cannot actually beamform')
                 Beamangles[beamangle] = tx_dict[beamangle]
+        
         tx_sector_1 = Beamangles[Beamangle1]
         tx_sector_2 = Beamangles[Beamangle2]
         
         with open('angles_client1.txt', 'w') as f:
-            f.write('position: {client1_pos} angle:{Beamangle1} tx_sector ={tx_sector_1}')
+            f.write('position: {client1_pos} angle:{Beamangle1} tx_sector ={tx_sector_1}\n\n')
         with open('angles_client2.txt', 'w') as f:
-            f.write('position: {client2_pos} angle:{Beamangle2} tx_sector ={tx_sector_2}')
+            f.write('position: {client2_pos} angle:{Beamangle2} tx_sector ={tx_sector_2}\n\n')
         client1_coords.append(client1_pos)
         client2_coords.append(client2_pos)
         #client1_last_two_coords = np.vstack(client1_coords[-2:])
